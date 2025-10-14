@@ -6,6 +6,9 @@ import DealerStaffDashboard from "@/features/dealer/staff/Dashboard";
 import { DealerStaffLayout } from "@/features/dealer/staff/dealer-staff-layout";
 import UnauthorizedPage from "@/features/misc/UnauthorizedPage";
 import AuthGuard from "@/features/auth/guards/AuthGuard";
+import VehicleCatalog from "@/components/staff-layout/VehicleCatalog";
+import VehicleDetail from '@/components/staff-layout/VehicleDetail';
+
 
 export default function App() {
   return (
@@ -29,14 +32,12 @@ export default function App() {
             />
           }
         />
-        <Route element={<RequireAuth allowedRoles={["DEALER_STAFF"]} />}>
-          <Route element={<DealerStaffLayout />}>
-            <Route
-              path="dealer/staff/dashboard"
-              element={<DealerStaffDashboard />}
-            />
-          </Route>
+         <Route element={<DealerStaffLayout />}>
+          <Route path="dealer/staff/dashboard" element={<DealerStaffDashboard />} />
+          <Route path="dealer/staff/vehicles" element={<VehicleCatalog />} />
+          <Route path="dealer/staff/vehicles/:id" element={<VehicleDetail />} />
         </Route>
+
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

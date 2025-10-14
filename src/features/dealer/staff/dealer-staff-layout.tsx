@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 const menuItems = [
-  { icon: Car, label: "Vehicles", href: "/staff/vehicles" },
+  { icon: Car, label: "Vehicles", href: "/dealer/staff/vehicles" },
   { icon: FileText, label: "Quotations", href: "/staff/quotations" },
   { icon: FileSignature, label: "Contracts", href: "/staff/contracts" },
   { icon: Users, label: "Customers", href: "/staff/customers" },
@@ -70,7 +70,7 @@ export function DealerStaffLayout() {
               <Zap className="h-3 w-3 text-yellow-500 absolute -bottom-0.5 -right-0.5" />
             </div>
             <span className="font-semibold text-lg hidden sm:inline">
-              EV DMS
+            <Link to ="/dealer/staff/dashboard"> EV DMS</Link>
             </span>
           </div>
 
