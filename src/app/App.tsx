@@ -16,26 +16,15 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="/" element={<AuthGuard />} />
 
-        <Route
-          path="/"
-          element={
-            <AuthGuard
-              roleRedirectMap={{
-                DEALER_STAFF: "/dealer/staff/dashboard",
-                DEALER_MANAGER: "/dealer/manager/dashboard",
-                EVM_STAFF: "/evm/dashboard",
-                ADMIN: "/admin/dashboard",
-              }}
-              fallbackPath="/login"
-              unauthorizedRedirect="/unauthorized"
+        <Route element={<RequireAuth allowedRoles={["DEALER_MANAGER"]} />}>
+          <Route element={<DealerStaffLayout />}>
+            <Route
+              path="/dealer/staff/dashboard"
+              element={<DealerStaffDashboard />}
             />
-          }
-        />
-         <Route element={<DealerStaffLayout />}>
-          <Route path="dealer/staff/dashboard" element={<DealerStaffDashboard />} />
-          <Route path="dealer/staff/vehicles" element={<VehicleCatalog />} />
-          <Route path="dealer/staff/vehicles/:id" element={<VehicleDetail />} />
+          </Route>
         </Route>
 
 
