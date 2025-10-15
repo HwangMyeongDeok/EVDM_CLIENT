@@ -1,4 +1,4 @@
-import { vehicles } from "@/components/staff-layout/vehicles";
+import { vehicles } from "@/features/dealer/staff/page/vehicles";
 import { Link } from "react-router-dom";
 
 function seatsForType(type: string) {

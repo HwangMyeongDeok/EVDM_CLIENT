@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { vehicles } from "@/components/staff-layout/vehicles";
+import { vehicles } from "@/features/dealer/staff/page/vehicles";
 
 export default function VehicleDetail() {
   const { id } = useParams<{ id: string }>();

@@ -6,8 +6,7 @@ import DealerStaffDashboard from "@/features/dealer/staff/Dashboard";
 import { DealerStaffLayout } from "@/features/dealer/staff/dealer-staff-layout";
 import UnauthorizedPage from "@/features/misc/UnauthorizedPage";
 import AuthGuard from "@/features/auth/guards/AuthGuard";
-import VehicleCatalog from "@/components/staff-layout/VehicleCatalog";
-import VehicleDetail from '@/components/staff-layout/VehicleDetail';
+
 
 
 export default function App() {
