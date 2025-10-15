@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Car, FileText, Users, Calendar, Package, CheckCircle2, TrendingUp } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
+import { Link } from "react-router-dom";
 // Vehicle
 export interface Vehicle {
   id: string;
@@ -344,7 +345,8 @@ export default function DealerStaffDashboard() {
           {/* Main Content Tabs */}
           <Tabs defaultValue="vehicles" className="space-y-4">
             <TabsList>
-              <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+              <TabsTrigger value="vehicles">
+                <Link to="/dealer/staff/vehicles"> Vehicles</Link></TabsTrigger>
               <TabsTrigger value="quotations">Quotations</TabsTrigger>
               <TabsTrigger value="contracts">Contracts</TabsTrigger>
               <TabsTrigger value="customers">Customers</TabsTrigger>
