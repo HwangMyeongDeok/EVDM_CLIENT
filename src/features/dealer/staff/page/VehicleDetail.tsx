@@ -8,101 +8,111 @@ export default function VehicleDetail() {
   const vehicle = vehicles.find((v) => v.id === idNum);
 
   const [mainImage, setMainImage] = useState<string | undefined>(undefined);
+  const [selectedColorIdx, setSelectedColorIdx] = useState<number>(0);
 
   useEffect(() => {
-    if (vehicle) setMainImage(vehicle.image);
+    if (vehicle) {
+      const imgs = vehicle.gallery && vehicle.gallery.length > 0 ? vehicle.gallery : [vehicle.image];
+      setSelectedColorIdx(0);
+      setMainImage(imgs[0]);
+    }
   }, [vehicle]);
 
   if (!vehicle) return <p className="text-center text-gray-500">Vehicle not found</p>;
 
   return (
     <div className="p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+  <div className="text-center text-2xl font-bold py-3 mb-6">Vehicle Details</div>
+
+      <div className="mb-4">
         <Link to="/dealer/staff/vehicles" className="text-blue-600 hover:underline">
           ← Back to Catalog
         </Link>
-        <div className="flex gap-2">
-          <button className="bg-blue-600 text-white px-4 py-1 rounded-lg hover:bg-blue-700">
-            Create Quotation
+      </div>
+      <div className="relative bg-white overflow-hidden rounded-lg mb-6">
+        <div className="absolute inset-0 flex items-start justify-center pointer-events-none">
+          <span className="text-gray-200 font-extrabold text-[8rem] md:text-[10rem] opacity-30 select-none">
+            {vehicle.name.split(" ").pop()}
+          </span>
+        </div>
+
+        <div className="absolute top-6 right-6">
+          <button className="bg-blue-500 text-white px-4 py-2 rounded-full shadow">
+            + CREATE QUOTATION
           </button>
         </div>
-      </div>
 
-      {/* Title + Price */}
-      <div className="mb-4">
-  <h1 className="text-2xl font-semibold">{vehicle.name}</h1>
-        <p className="text-green-600 font-medium">In Stock</p>
-        <p className="text-blue-600 font-bold text-xl">{vehicle.price}</p>
-      </div>
-
-      {/* Image Gallery */}
-      <div className="bg-white rounded-xl shadow p-4 mb-6">
-        {mainImage && (
-          <img
-            src={mainImage}
-            alt={vehicle.name}
-            className="w-full h-72 object-cover rounded-xl mb-4"
-          />
-        )}
-        <div className="flex gap-3">
-              {[vehicle.image].map((img: string, idx: number) => (
-            <img
-              key={idx}
-              src={img}
-                  alt={`${vehicle.name} ${idx}`}
-              onClick={() => setMainImage(img)}
-              className={`w-20 h-16 object-cover rounded-lg cursor-pointer border-2 ${
-                mainImage === img ? "border-blue-600" : "border-transparent"
-              }`}
-            />
-          ))}
+        <div className="flex justify-center items-center pt-8 pb-6">
+          {mainImage && (
+            <img src={mainImage} alt={vehicle.name} className="w-full max-w-4xl object-contain" />
+          )}
         </div>
-      </div>
 
-      {/* Specifications + Promotions + Actions */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* Left Section */}
-        <div className="col-span-2">
-          <h2 className="text-xl font-semibold mb-3">Specifications</h2>
-          <div className="grid grid-cols-2 gap-4 text-gray-700 bg-white p-4 rounded-xl shadow">
-            <div>
-              <p><strong>Type:</strong> {vehicle.type}</p>
-              <p><strong>Range:</strong> {vehicle.range}</p>
-            </div>
-            <div>
-              <p><strong>Seats:</strong> {vehicle.type.toLowerCase().includes("mini") ? "4" : "5"}</p>
-              <p><strong>---</strong></p>
-            </div>
+        <div className="flex flex-col items-center pb-6">
+          <h2 className="text-2xl font-bold tracking-widest">{vehicle.name.toUpperCase()}</h2>
+
+          <div className="flex items-center justify-center mt-4 space-x-3">
+            {(vehicle.colors && vehicle.colors.length > 0
+              ? vehicle.colors.map((c) => c.image)
+              : (vehicle.gallery && vehicle.gallery.length > 0 ? vehicle.gallery : [vehicle.image])
+            ).map((img, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setSelectedColorIdx(idx);
+                  setMainImage(img);
+                }}
+                className={`w-10 h-10 rounded-full border-2 ${selectedColorIdx === idx ? 'border-blue-600' : 'border-gray-200'} overflow-hidden`}
+                style={{ backgroundImage: `url(${img})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                aria-label={`color-${idx}`}
+              />
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Right Section */}
-        <div className="space-y-4">
-          {vehicle.promotions && (
-            <div className="bg-green-50 p-4 rounded-xl shadow border border-green-200">
-              <h3 className="font-semibold text-green-700 mb-1">Available Promotion</h3>
-              <p className="text-gray-700">{vehicle.promotions.name}</p>
-              <p className="text-green-700 font-semibold mt-1">
-                {vehicle.promotions.value} off
-              </p>
-              <p className="text-sm text-gray-500">
-                Valid until {vehicle.promotions.validUntil}
-              </p>
-            </div>
-          )}
+      <div className="mt-6 border-t">
+        <div className="grid grid-cols-3 gap-0 text-sm text-gray-700">
+          <div className="p-6 bg-white border-r">
+            <p className="text-gray-500">Dài x rộng x Cao (mm)</p>
+            <p className="font-medium mt-1">3967 x 1723 x 1579</p>
 
-          <div className="bg-white p-4 rounded-xl shadow">
-            <h3 className="font-semibold mb-2">Quick Actions</h3>
-            <button className="w-full bg-blue-600 text-white py-2 rounded-lg mb-2 hover:bg-blue-700">
-              Schedule Test Drive
-            </button>
-            <button className="w-full border py-2 rounded-lg mb-2">
-              Request More Info
-            </button>
-            <button className="w-full border py-2 rounded-lg">
-              Calculate Financing
-            </button>
+            <p className="text-gray-500 mt-3">Bộ sạc tại nhà (kW)</p>
+            <p className="mt-1">{vehicle.battery ?? "-"}</p>
+
+            <p className="text-gray-500 mt-3">Thời gian nạp pin</p>
+            <p className="mt-1">33 phút (10%-70%)</p>
+
+            <p className="text-gray-500 mt-3">Hệ thống phanh (trước/sau)</p>
+            <p className="mt-1">Đĩa/Đĩa</p>
+          </div>
+
+          <div className="p-6 bg-white border-r">
+            <p className="text-gray-500">Chiều dài cơ sở</p>
+            <p className="font-medium mt-1">2514 mm</p>
+
+            <p className="text-gray-500 mt-3">Quãng đường</p>
+            <p className="mt-1">{vehicle.range}</p>
+
+            <p className="text-gray-500 mt-3">Dẫn động</p>
+            <p className="mt-1">FWD/Cầu trước</p>
+
+            <p className="text-gray-500 mt-3">Kích thước la-zăng</p>
+            <p className="mt-1">16 inch</p>
+          </div>
+
+          <div className="p-6 bg-white">
+            <p className="text-gray-500">Khoảng sáng gầm xe</p>
+            <p className="font-medium mt-1">160 mm</p>
+
+            <p className="text-gray-500 mt-3">Công suất tối đa</p>
+            <p className="mt-1">{vehicle.power ?? "-"}</p>
+
+            <p className="text-gray-500 mt-3">Đèn chiếu sáng phía trước</p>
+            <p className="mt-1">Bi-halogen, projector</p>
+
+            <p className="text-gray-500 mt-3">Ghế lái</p>
+            <p className="mt-1">Chỉnh cơ</p>
           </div>
         </div>
       </div>
