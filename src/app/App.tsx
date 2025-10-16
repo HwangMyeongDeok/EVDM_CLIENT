@@ -33,25 +33,23 @@ export default function App() {
           />
    
             <Route
-              path="/dealer/staff/page/VehicleCatalog"
+              path="/dealer/staff/vehicles"
               element={<VehicleCatalog />}
             />
             <Route
-              path="/dealer/staff/page/VehicleDetail"
+              path="/dealer/staff/vehicles/:id"
               element={<VehicleDetail />}
             />
             <Route
-              path="/dealer/staff/page/PaymentFormPage"
+              path="/dealer/staff/PaymentFormPage"
               element={<PaymentFormPage />}
             />
             <Route
-              path="/dealer/staff/page/PaymentHistoryPage"
+              path="/dealer/staff/PaymentHistoryPage"
               element={<PaymentHistoryPage />}
             />
             
           
-          </Route>
-       {/* </Route> */}
           <Route path="/dealer/staff/contracts" element={<ContractListPage />} />
           <Route path="/dealer/staff/contracts/new" element={<ContractFormPage />} />
           <Route path="/dealer/staff/contracts/:id" element={<ContractFormPage />} />
