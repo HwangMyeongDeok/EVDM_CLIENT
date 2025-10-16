@@ -6,11 +6,14 @@ import DealerStaffDashboard from "@/features/dealer/staff/Dashboard";
 import { DealerStaffLayout } from "@/features/dealer/staff/dealer-staff-layout";
 import UnauthorizedPage from "@/features/misc/UnauthorizedPage";
 import AuthGuard from "@/features/auth/guards/AuthGuard";
-import VehicleCatalog from "@/features/dealer/staff/page/VehicleCatalog";
-import VehicleDetail from "@/features/dealer/staff/page/VehicleDetail";
+
 import PaymentFormPage from "@/features/dealer/staff/page/PaymentFormPage";
 import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage";
 
+import { ContractFormPage } from "@/features/contract/page/ContractFormPage";
+import { ContractListPage } from "@/features/contract/page/ContractListPage";
+import VehicleCatalog from "@/features/dealer/staff/page/VehicleCatalog";
+import VehicleDetail from "@/features/dealer/staff/page/VehicleDetail";
 
 export default function App() {
   return (
@@ -21,12 +24,14 @@ export default function App() {
         <Route path="/" element={<AuthGuard />} />
          
 
-      {/*  <Route element={<RequireAuth allowedRoles={["DEALER_MANAGER"]} />}> */}
-          <Route element={<DealerStaffLayout />}>
-            <Route
-              path="/dealer/staff/dashboard"
-              element={<DealerStaffDashboard />}
-            />
+
+        {/* <Route element={<RequireAuth allowedRoles={["DEALER_MANAGER"]} />}> */}
+        <Route element={<DealerStaffLayout />}>
+          <Route
+            path="/dealer/staff/dashboard"
+            element={<DealerStaffDashboard />}
+          />
+   
             <Route
               path="/dealer/staff/page/VehicleCatalog"
               element={<VehicleCatalog />}
@@ -47,6 +52,11 @@ export default function App() {
           
           </Route>
        {/* </Route> */}
+          <Route path="/dealer/staff/contracts" element={<ContractListPage />} />
+          <Route path="/dealer/staff/contracts/new" element={<ContractFormPage />} />
+          <Route path="/dealer/staff/contracts/:id" element={<ContractFormPage />} />
+        </Route>
+        {/* </Route> */}
 
 
         <Route path="*" element={<NotFoundPage />} />
