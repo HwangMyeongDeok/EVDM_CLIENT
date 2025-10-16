@@ -24,6 +24,7 @@ import {
   LogOut,
   User,
   Zap,
+  CreditCard,
 } from "lucide-react";
 
 const menuItems = [
@@ -31,7 +32,7 @@ const menuItems = [
   { icon: FileText, label: "Quotations", href: "/dealer/staff/quotations" },
   { icon: FileSignature, label: "Contracts", href: "/dealer/staff/contracts" },
   { icon: Users, label: "Customers", href: "/dealer/staff/customers" },
-  { icon: Calendar, label: "Test Drives", href: "/dealer/staff/test-drives" },
+  { icon: CreditCard , label: "Payment", href: "/dealer/staff/PaymentHistoryPage" },
   { icon: BarChart3, label: "Reports", href: "/dealer/staff/reports" },
 ];
 
