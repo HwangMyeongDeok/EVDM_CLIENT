@@ -8,6 +8,8 @@ import UnauthorizedPage from "@/features/misc/UnauthorizedPage";
 import AuthGuard from "@/features/auth/guards/AuthGuard";
 import { ContractFormPage } from "@/features/contract/page/ContractFormPage";
 import { ContractListPage } from "@/features/contract/page/ContractListPage";
+import VehicleCatalog from "@/features/dealer/staff/page/VehicleCatalog";
+import VehicleDetail from "@/features/dealer/staff/page/VehicleDetail";
 
 export default function App() {
   return (
@@ -23,6 +25,14 @@ export default function App() {
             path="/dealer/staff/dashboard"
             element={<DealerStaffDashboard />}
           />
+          <Route
+              path="/dealer/staff/vehicles"
+              element={<VehicleCatalog />}
+            />
+            <Route
+              path="/dealer/staff/vehicles/:id"
+              element={<VehicleDetail />}
+            />
           <Route path="/dealer/staff/contracts" element={<ContractListPage />} />
           <Route path="/dealer/staff/contracts/new" element={<ContractFormPage />} />
           <Route path="/dealer/staff/contracts/:id" element={<ContractFormPage />} />
