@@ -1,6 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "@/lib/axios";
 import type { LoginResponse } from "@/types/api/auth";
+import instance from "@/lib/axios";
 
 export const login = createAsyncThunk<
   LoginResponse,
@@ -8,7 +8,7 @@ export const login = createAsyncThunk<
   { rejectValue: string }
 >("auth/login", async (credentials, { rejectWithValue }) => {
   try {
-    const { data } = await axios.post<LoginResponse>("/auth/login", credentials);
+    const { data } = await instance.post<LoginResponse>("/auth/login", credentials);
     return data; 
   } catch {
     return rejectWithValue("Login failed");
