@@ -9,7 +9,7 @@ export interface QuotationItem {
   line_total: number;
 }
 
-export interface Quotation {
+export interface IQuotation {
   _id: string;
   customer_id: string;
   dealer_id: string;

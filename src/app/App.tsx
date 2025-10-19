@@ -10,6 +10,9 @@ import PaymentFormPage from "@/features/dealer/staff/page/PaymentFormPage";
 import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage";
 import { ContractFormPage } from "@/features/contract/page/ContractFormPage";
 import { ContractListPage } from "@/features/contract/page/ContractListPage";
+import VehicleCatalog from "@/features/vehicles/page/VehicleCatalog";
+import VehicleDetail from "@/features/vehicles/page/VehicleDetail";
+
 
 export default function App() {
   return (
@@ -17,8 +20,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="/404" element={<NotFoundPage />} />
         <Route path="/" element={<AuthGuard />} />
-         
 
 
         {/* <Route element={<RequireAuth allowedRoles={["DEALER_MANAGER"]} />}> */}
@@ -36,7 +39,8 @@ export default function App() {
               element={<PaymentHistoryPage />}
             />
             
-          
+          <Route path="/dealer/staff/vehicles" element={<VehicleCatalog />} />
+          <Route path="/dealer/staff/vehicles/:id" element={<VehicleDetail />} />
           <Route path="/dealer/staff/contracts" element={<ContractListPage />} />
           <Route path="/dealer/staff/contracts/new" element={<ContractFormPage />} />
           <Route path="/dealer/staff/contracts/:id" element={<ContractFormPage />} />
