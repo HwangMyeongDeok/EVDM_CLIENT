@@ -7,10 +7,9 @@ interface VehicleCarouselProps {
 }
 
 export function VehicleCarousel({ vehicle }: VehicleCarouselProps) {
-  const images = [
-    vehicle?.imageUrl || "/placeholder.svg?height=600&width=800",
-    vehicle?.imageUrl || "/placeholder.svg?height=600&width=800",
-  ];
+  const images: string[] = vehicle.image_urls && vehicle.image_urls.length > 0
+    ? vehicle.image_urls
+    : ["/placeholder.svg?height=600&width=800"];
 
   return (
     <Card className="overflow-hidden">
@@ -21,7 +20,7 @@ export function VehicleCarousel({ vehicle }: VehicleCarouselProps) {
               <div className="relative w-full h-96 bg-muted">
                 <img
                   src={img}
-                  alt={`${vehicle.modelName} view ${idx + 1}`}
+                  alt={`${vehicle.model_name} view ${idx + 1}`}
                   className="object-cover w-full h-full"
                   loading="lazy"
                 />

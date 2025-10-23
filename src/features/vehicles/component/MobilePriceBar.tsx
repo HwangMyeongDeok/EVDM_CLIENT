@@ -1,27 +1,36 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/format";
-import type { IVehicle } from "@/types/vehicle";
+import { QuotationModal } from "@/features/quotations/component/QuotationModal";
+import type { IVehicleVariant } from "@/types/vehicle";
 
-interface MobilePriceBarProps {
-  selectedVariant: IVehicle["variants"][0] | undefined;
-}
+export function MobilePriceBar({ selectedVariant }: { selectedVariant: IVehicleVariant }) {
+  const [isQuotationOpen, setIsQuotationOpen] = useState(false);
 
-export function MobilePriceBar({ selectedVariant }: MobilePriceBarProps) {
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg p-4 z-10">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground">Giá: {formatPrice(selectedVariant?.retailPrice || 0)}</p>
-          {selectedVariant?.discountPercent ? selectedVariant.discountPercent > 0 && (
-            <p className="text-xs text-green-600">
-              Tiết kiệm {formatPrice((selectedVariant.retailPrice * selectedVariant.discountPercent) / 100)}
+    <>
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t p-4 z-50 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Giá bán</p>
+            <p className="text-xl font-bold text-primary">
+              {formatPrice(selectedVariant.retail_price)}
             </p>
-          ) : null}
+          </div>
+          <Button 
+            onClick={() => setIsQuotationOpen(true)} 
+            className="ml-4 px-6"
+          >
+            Báo giá
+          </Button>
         </div>
-        <Button className="flex-1" size="lg">
-          Yêu cầu báo giá
-        </Button>
       </div>
-    </div>
+      
+      <QuotationModal
+        open={isQuotationOpen}
+        onOpenChange={setIsQuotationOpen}
+        variant={selectedVariant}
+      />
+    </>
   );
 }

@@ -12,11 +12,13 @@ import { VehicleFAQ } from "@/features/vehicles/component/VehicleFAQ";
 import { SimilarVehicles } from "@/features/vehicles/component/SimilarVehicles";
 import { VariantSummary } from "@/features/vehicles/component/VariantSummary";
 import { MobilePriceBar } from "@/features/vehicles/component/MobilePriceBar";
-
+import { QuotationModal } from "@/features/quotations/component/QuotationModal";
 
 export default function VehicleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
+  const [isQuotationOpen, setIsQuotationOpen] = useState(false);
+  
   const { data: vehicle, isLoading, isError, refetch, isFetching } = useGetVehicleByIdQuery(id || "");
 
   if (!isLoading && !vehicle) {
@@ -24,7 +26,7 @@ export default function VehicleDetailPage() {
   }
 
   const selectedVariant = vehicle?.variants[selectedVariantIdx];
-  const minRetailPrice = vehicle ? Math.min(...vehicle.variants.map((v) => v.retailPrice || 0)) : 0;
+  const minRetailPrice = vehicle ? Math.min(...vehicle.variants.map((v) => v.retail_price || 0)) : 0;
 
   return (
     <main className="min-h-screen bg-background dark:bg-gray-900">
@@ -65,24 +67,38 @@ export default function VehicleDetailPage() {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
-              <VehicleCarousel vehicle={vehicle!} />
-              <VariantSelector
-                vehicle={vehicle!}
-                selectedVariantIdx={selectedVariantIdx}
-                setSelectedVariantIdx={setSelectedVariantIdx}
+          <>
+            <div className="grid gap-8 lg:grid-cols-3">
+              <div className="lg:col-span-2 space-y-6">
+                <VehicleCarousel vehicle={vehicle!} />
+                <VariantSelector
+                  vehicle={vehicle!}
+                  selectedVariantIdx={selectedVariantIdx}
+                  setSelectedVariantIdx={setSelectedVariantIdx}
+                />
+                <MainSpecs vehicle={vehicle!} selectedVariant={selectedVariant} />
+                <PerformanceSpecs vehicle={vehicle!} selectedVariant={selectedVariant} />
+                <VehicleFAQ />
+                <SimilarVehicles />
+              </div>
+              <div className="space-y-6 lg:sticky lg:top-4">
+                <VariantSummary 
+                  vehicle={vehicle!} 
+                  selectedVariant={selectedVariant!} 
+                />
+                <MobilePriceBar selectedVariant={selectedVariant!} />
+              </div>
+            </div>
+
+            {/* Quotation Modal - Single instance cho cả Desktop + Mobile */}
+            {selectedVariant && (
+              <QuotationModal
+                open={isQuotationOpen}
+                onOpenChange={setIsQuotationOpen}
+                variant={selectedVariant}
               />
-              <MainSpecs vehicle={vehicle!} selectedVariant={selectedVariant} />
-              <PerformanceSpecs vehicle={vehicle!} selectedVariant={selectedVariant} />
-              <VehicleFAQ />
-              <SimilarVehicles />
-            </div>
-            <div className="space-y-6 lg:sticky lg:top-4">
-              <VariantSummary vehicle={vehicle!} selectedVariant={selectedVariant} />
-              <MobilePriceBar selectedVariant={selectedVariant} />
-            </div>
-          </div>
+            )}
+          </>
         )}
       </section>
     </main>

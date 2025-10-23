@@ -1,5 +1,5 @@
-export const formatPrice = (price: number) =>
-  price.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
+export const formatPrice = (price?: number) =>
+  price != null ? price.toLocaleString("vi-VN", { style: "currency", currency: "VND" }) : "N/A";
 
 export const getColorHex = (colorName: string): string => {
   const colorMap: Record<string, string> = {

@@ -6,34 +6,48 @@ import { Separator } from "@/components/ui/separator";
 import { Battery, Gauge, DollarSign, Users } from "lucide-react";
 import type { IVehicle } from "@/types/vehicle";
 
-const formatPrice = (price: number) =>
-  price.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
+const formatPrice = (price?: number) =>
+  price != null ? price.toLocaleString("vi-VN", { style: "currency", currency: "VND" }) : "N/A";
 
 export function VehicleCard({ vehicle }: { vehicle: IVehicle }) {
-  const mainVariant = vehicle.variants[0];
+  const mainVariant = vehicle.variants?.[0];
+  console.log("dasda", vehicle.variants)
+  const mainImage =
+    Array.isArray(vehicle.image_urls)
+      ? vehicle.image_urls[0]
+      : typeof vehicle.image_urls === "string"
+      ? vehicle.image_urls
+      : undefined;
 
   return (
     <Card className="group relative overflow-hidden transition-transform duration-300 hover:scale-[1.02] hover:shadow-xl border border-border">
       <CardHeader className="p-0">
         <div className="relative w-full h-48 bg-muted flex items-center justify-center overflow-hidden">
-          <img
-            src={vehicle.imageUrl}
-            alt={vehicle.modelName}
-            className="object-cover transition-transform duration-300 group-hover:scale-105 w-full h-full"
-            loading="lazy"
-          />
+          {mainImage ? (
+            <img
+              src={mainImage}
+              alt={vehicle.model_name}
+              className="object-cover transition-transform duration-300 group-hover:scale-105 w-full h-full"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+              No Image
+            </div>
+          )}
         </div>
       </CardHeader>
 
       <CardContent className="px-6 py-4">
         <div className="flex justify-between items-start mb-3">
-          <h3 className="text-xl font-bold text-primary">{vehicle.modelName}</h3>
+          <h3 className="text-xl font-bold text-primary">{vehicle.model_name || "N/A"}</h3>
           <Badge variant="secondary" className="text-base px-3 py-1">
-            {vehicle.bodyType}
+            {vehicle.body_type || "N/A"}
           </Badge>
         </div>
 
         <Separator className="my-3" />
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-4 text-sm">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -41,7 +55,7 @@ export function VehicleCard({ vehicle }: { vehicle: IVehicle }) {
               <span>Quãng đường</span>
             </div>
             <span className="text-2xl font-bold text-green-600">
-              {mainVariant?.rangeKm ? `${mainVariant.rangeKm} km` : "N/A"}
+              {mainVariant?.range_km != null ? `${mainVariant.range_km} km` : "N/A"}
             </span>
           </div>
 
@@ -51,7 +65,7 @@ export function VehicleCard({ vehicle }: { vehicle: IVehicle }) {
               <span>Tăng tốc (0-100km/h)</span>
             </div>
             <span className="text-2xl font-bold text-primary">
-              {mainVariant?.acceleration0100 ? `${mainVariant.acceleration0100}s` : "N/A"}
+              {mainVariant?.acceleration_0_100 != null ? `${mainVariant.acceleration_0_100}s` : "N/A"}
             </span>
           </div>
 
@@ -60,7 +74,7 @@ export function VehicleCard({ vehicle }: { vehicle: IVehicle }) {
               <Users className="w-5 h-5" />
               <span>Số ghế</span>
             </div>
-            <span className="font-medium">{vehicle.seats}</span>
+            <span className="font-medium">{vehicle.seats ?? "N/A"}</span>
           </div>
         </div>
 
@@ -71,11 +85,11 @@ export function VehicleCard({ vehicle }: { vehicle: IVehicle }) {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-bold text-primary">
-              {mainVariant ? formatPrice(mainVariant.retailPrice) : "N/A"}
+              {formatPrice(mainVariant?.retail_price)}
             </span>
-            {mainVariant?.discountPercent > 0 && (
+            {mainVariant?.discount_percent > 0 && (
               <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                {mainVariant.discountPercent}% OFF
+                {mainVariant.discount_percent}% OFF
               </Badge>
             )}
           </div>
@@ -91,7 +105,7 @@ export function VehicleCard({ vehicle }: { vehicle: IVehicle }) {
           So sánh
         </Button>
         <Button asChild className="bg-primary hover:bg-primary/90 text-white">
-          <Link to={`/dealer/staff/vehicles/${vehicle._id}`}>Xem Chi Tiết</Link>
+          <Link to={`/dealer/staff/vehicles/${vehicle.vehicle_id}`}>Xem Chi Tiết</Link>
         </Button>
       </CardFooter>
     </Card>
