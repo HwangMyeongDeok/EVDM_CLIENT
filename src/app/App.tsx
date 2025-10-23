@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "@/features/auth/page/LoginPage";
-import RequireAuth from "@/features/auth/guards/RequireAuth";
 import NotFoundPage from "@/features/misc/NotFoundPage";
 import DealerStaffDashboard from "@/features/dealer/staff/Dashboard";
 import { DealerStaffLayout } from "@/features/dealer/staff/dealer-staff-layout";
@@ -10,8 +9,10 @@ import PaymentFormPage from "@/features/dealer/staff/page/PaymentFormPage";
 import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage";
 import { ContractFormPage } from "@/features/contract/page/ContractFormPage";
 import { ContractListPage } from "@/features/contract/page/ContractListPage";
-import VehicleCatalog from "@/features/vehicles/page/VehicleCatalog";
-import VehicleDetail from "@/features/vehicles/page/VehicleDetail";
+import VehicleCatalog from "@/features/dealer/staff/page/VehicleCatalog";
+import VehicleDetail from "@/features/dealer/staff/page/VehicleDetail";
+import QuotationListPage from "@/features/quotation/page/QuotationListPage";
+import QuotationCreatePage from "@/features/quotation/page/QuotationCreatePage";
 
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
             path="/dealer/staff/dashboard"
             element={<DealerStaffDashboard />}
           />
+
             <Route
               path="/dealer/staff/PaymentFormPage"
               element={<PaymentFormPage />}
@@ -38,12 +40,16 @@ export default function App() {
               path="/dealer/staff/PaymentHistoryPage"
               element={<PaymentHistoryPage />}
             />
+
             
           <Route path="/dealer/staff/vehicles" element={<VehicleCatalog />} />
           <Route path="/dealer/staff/vehicles/:id" element={<VehicleDetail />} />
           <Route path="/dealer/staff/contracts" element={<ContractListPage />} />
           <Route path="/dealer/staff/contracts/new" element={<ContractFormPage />} />
           <Route path="/dealer/staff/contracts/:id" element={<ContractFormPage />} />
+
+          <Route path="/dealer/staff/quotations" element={<QuotationListPage />} />
+          <Route path="/dealer/staff/quotations/new" element={<QuotationCreatePage />} />
         </Route>
 
 
