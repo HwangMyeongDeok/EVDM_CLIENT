@@ -12,6 +12,9 @@ import { ContractFormPage } from "@/features/contract/page/ContractFormPage";
 import { ContractListPage } from "@/features/contract/page/ContractListPage";
 import VehicleCatalog from "@/features/vehicles/page/VehicleCatalog";
 import VehicleDetail from "@/features/vehicles/page/VehicleDetail";
+import QuotationListPage from "@/features/quotations/page/QuotationListpage";
+import QuotationCreatePage from "@/features/quotations/page/QuotationCreatePage";
+import PurchaseOrderForm from "@/features/order/page/PurchaseOrderForm";
 
 
 export default function App() {
@@ -44,6 +47,10 @@ export default function App() {
           <Route path="/dealer/staff/contracts" element={<ContractListPage />} />
           <Route path="/dealer/staff/contracts/new" element={<ContractFormPage />} />
           <Route path="/dealer/staff/contracts/:id" element={<ContractFormPage />} />
+
+          <Route path="/dealer/staff/quotations" element={<QuotationListPage />} />
+          <Route path="/dealer/staff/quotations/new" element={<QuotationCreatePage />} />
+          <Route path="/dealer/manager/purchase-orders/new" element={<PurchaseOrderForm />} />
         </Route>
 
 
