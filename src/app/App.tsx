@@ -5,10 +5,8 @@ import DealerStaffDashboard from "@/features/dealer/staff/Dashboard";
 import { DealerStaffLayout } from "@/features/dealer/staff/dealer-staff-layout";
 import UnauthorizedPage from "@/features/misc/UnauthorizedPage";
 import AuthGuard from "@/features/auth/guards/AuthGuard";
-
 import PaymentFormPage from "@/features/dealer/staff/page/PaymentFormPage";
 import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage";
-
 import { ContractFormPage } from "@/features/contract/page/ContractFormPage";
 import { ContractListPage } from "@/features/contract/page/ContractListPage";
 import VehicleCatalog from "@/features/dealer/staff/page/VehicleCatalog";
@@ -16,14 +14,15 @@ import VehicleDetail from "@/features/dealer/staff/page/VehicleDetail";
 import QuotationListPage from "@/features/quotation/page/QuotationListPage";
 import QuotationCreatePage from "@/features/quotation/page/QuotationCreatePage";
 
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="/404" element={<NotFoundPage />} />
         <Route path="/" element={<AuthGuard />} />
-
 
 
         {/* <Route element={<RequireAuth allowedRoles={["DEALER_MANAGER"]} />}> */}
@@ -34,14 +33,6 @@ export default function App() {
           />
 
             <Route
-              path="/dealer/staff/vehicles"
-              element={<VehicleCatalog />}
-            />
-            <Route
-              path="/dealer/staff/vehicles/:id"
-              element={<VehicleDetail />}
-            />
-            <Route
               path="/dealer/staff/PaymentFormPage"
               element={<PaymentFormPage />}
             />
@@ -50,7 +41,9 @@ export default function App() {
               element={<PaymentHistoryPage />}
             />
 
-
+            
+          <Route path="/dealer/staff/vehicles" element={<VehicleCatalog />} />
+          <Route path="/dealer/staff/vehicles/:id" element={<VehicleDetail />} />
           <Route path="/dealer/staff/contracts" element={<ContractListPage />} />
           <Route path="/dealer/staff/contracts/new" element={<ContractFormPage />} />
           <Route path="/dealer/staff/contracts/:id" element={<ContractFormPage />} />
@@ -58,7 +51,6 @@ export default function App() {
           <Route path="/dealer/staff/quotations" element={<QuotationListPage />} />
           <Route path="/dealer/staff/quotations/new" element={<QuotationCreatePage />} />
         </Route>
-        {/* </Route> */}
 
 
         <Route path="*" element={<NotFoundPage />} />
