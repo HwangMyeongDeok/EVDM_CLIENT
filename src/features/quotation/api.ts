@@ -4,70 +4,108 @@ import instance from "@/lib/axios";
 export type QuotationStatus = "DRAFT" | "SENT" | "APPROVED" | "REJECTED";
 
 export interface CreateQuotationItemDto {
-  variantId: string;
+  variantId: number;
   quantity: number;
 }
 
 export interface CreateQuotationDto {
-  customerId: string;
+  customerId: number;
   items: CreateQuotationItemDto[];
   notes?: string;
 }
 
 export interface UpdateQuotationDto {
-  items?: CreateQuotationItemDto[];
-  notes?: string;
   status?: QuotationStatus;
+  notes?: string;
+  discount_total?: number;
+  total_amount?: number;
 }
 
 export interface QuotationItem {
-  variantId: string;
+  item_id: number;
+  quotation_id: number;
+  variant_id: number;
   description?: string;
   quantity: number;
-  unitPrice: number;
-  discountAmount?: number;
-  lineTotal: number;
+  unit_price: string;
+  discount_amount: string;
+  line_total: string;
+  variant?: {
+    variant_id: number;
+    vehicle_id: number;
+    version: string;
+    color: string;
+    dealer_price: string;
+    base_price: string;
+    retail_price: string;
+    discount_percent: string;
+    model_year: number;
+    battery_capacity_kwh: string;
+    range_km: number;
+    motor_power_kw: string;
+    acceleration_0_100: string;
+    top_speed_kmh: number;
+    charging_time_hours: string;
+    status: string;
+  };
 }
 
 export interface Customer {
-  _id: string;
-  fullName: string;
+  customer_id: number;
+  full_name: string;
   phone?: string;
   email?: string;
   address?: string;
+  dealer_id: number;
+  created_at?: string;
 }
 
-export interface Staff {
-  _id: string;
-  fullName: string;
-  email?: string;
+export interface Dealer {
+  dealer_id: number;
+  dealer_name: string;
+  address: string;
+  phone: string;
+  email: string;
+  created_at?: string;
+}
+
+export interface User {
+  user_id: number;
+  email: string;
+  full_name: string;
+  phone?: string;
+  role: string;
+  dealer_id?: number;
+  created_at?: string;
 }
 
 export interface QuotationResponse {
-  _id: string;
-  quotationNumber: string;
-  customer: Customer | string;
-  dealer: string;
-  staff: Staff | string;
-  items: QuotationItem[];
-  subtotal: number;
-  taxRate: number;
-  taxAmount: number;
-  discountTotal: number;
-  totalAmount: number;
-  notes?: string;
+  quotation_id: number;
+  quotation_number: string;
+  customer_id: number;
+  dealer_id: number;
+  user_id: number;
   status: QuotationStatus;
-  approvedBy?: string;
-  approvedAt?: string;
-  createdAt: string;
-  updatedAt: string;
+  subtotal: string;
+  tax_rate: string;
+  tax_amount: string;
+  discount_total: string;
+  total_amount: string;
+  notes?: string;
+  approved_by?: number | null;
+  created_at: string;
+  updated_at?: string | null;
+  customer?: Customer;
+  dealer?: Dealer;
+  user?: User;
+  items: QuotationItem[];
 }
 
-export interface QuotationListResponse {
-  data: QuotationResponse[];
-  total: number;
-  page: number;
-  limit: number;
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  count?: number;
+  message?: string;
 }
 
 // API Functions
@@ -78,94 +116,82 @@ export interface QuotationListResponse {
 export const createQuotation = async (
   data: CreateQuotationDto
 ): Promise<QuotationResponse> => {
-  const response = await instance.post<QuotationResponse>("/quotations", data);
-  return response.data;
+  console.log("createQuotation called with data:", data);
+  console.log("Request URL:", "/quotations");
+  
+  try {
+    const response = await instance.post<ApiResponse<QuotationResponse>>("/quotations", data);
+    console.log("createQuotation response:", response);
+    return response.data.data!;
+  } catch (error) {
+    console.error("createQuotation error:", error);
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { data?: unknown; status?: number; statusText?: string } };
+      console.error("Error response data:", axiosError.response?.data);
+      console.error("Error response status:", axiosError.response?.status);
+    }
+    throw error;
+  }
 };
 
 /**
  * Lấy danh sách quotations
  */
-export const getQuotations = async (params?: {
-  page?: number;
-  limit?: number;
-  status?: QuotationStatus;
-  customerId?: string;
-}): Promise<QuotationResponse[]> => {
-  const response = await instance.get<QuotationListResponse>("/quotations", {
-    params,
-  });
-  return response.data.data || (response.data as unknown as QuotationResponse[]);
+export const getQuotations = async (): Promise<QuotationResponse[]> => {
+  try {
+    const response = await instance.get("/quotations");
+    
+    // Handle different response structures
+    if (response.data.data) {
+      return response.data.data;
+    }
+    
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    console.error("Error fetching quotations:", error);
+    throw error;
+  }
 };
 
 /**
  * Lấy chi tiết quotation
  */
 export const getQuotationById = async (
-  id: string
+  id: number
 ): Promise<QuotationResponse> => {
-  const response = await instance.get<QuotationResponse>(`/quotations/${id}`);
-  return response.data;
+  const response = await instance.get<ApiResponse<QuotationResponse>>(`/quotations/${id}`);
+  return response.data.data!;
 };
 
 /**
  * Cập nhật quotation
  */
 export const updateQuotation = async (
-  id: string,
+  id: number,
   data: UpdateQuotationDto
 ): Promise<QuotationResponse> => {
-  const response = await instance.put<QuotationResponse>(
+  const response = await instance.patch<ApiResponse<QuotationResponse>>(
     `/quotations/${id}`,
     data
   );
-  return response.data;
+  return response.data.data!;
 };
 
 /**
- * Gửi quotation cho khách hàng
+ * Xóa quotation (chỉ được xóa khi status = DRAFT)
  */
-export const sendQuotation = async (id: string): Promise<QuotationResponse> => {
-  const response = await instance.post<QuotationResponse>(
-    `/quotations/${id}/send`
-  );
-  return response.data;
-};
-
-/**
- * Phê duyệt quotation
- */
-export const approveQuotation = async (
-  id: string
-): Promise<QuotationResponse> => {
-  const response = await instance.post<QuotationResponse>(
-    `/quotations/${id}/approve`
-  );
-  return response.data;
-};
-
-/**
- * Từ chối quotation
- */
-export const rejectQuotation = async (
-  id: string
-): Promise<QuotationResponse> => {
-  const response = await instance.post<QuotationResponse>(
-    `/quotations/${id}/reject`
-  );
-  return response.data;
-};
-
-/**
- * Xóa quotation
- */
-export const deleteQuotation = async (id: string): Promise<void> => {
+export const deleteQuotation = async (id: number): Promise<void> => {
   await instance.delete(`/quotations/${id}`);
 };
 
 /**
- * Export quotation PDF
+ * Export quotation PDF (nếu backend support)
  */
-export const exportQuotationPDF = async (id: string): Promise<Blob> => {
+export const exportQuotationPDF = async (id: number): Promise<Blob> => {
   const response = await instance.get(`/quotations/${id}/pdf`, {
     responseType: "blob",
   });
@@ -176,16 +202,21 @@ export const exportQuotationPDF = async (id: string): Promise<Blob> => {
  * Download quotation PDF
  */
 export const downloadQuotationPDF = async (
-  id: string,
+  id: number,
   quotationNumber: string
 ): Promise<void> => {
-  const blob = await exportQuotationPDF(id);
-  const url = globalThis.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `Quotation_${quotationNumber}.pdf`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  globalThis.URL.revokeObjectURL(url);
+  try {
+    const blob = await exportQuotationPDF(id);
+    const url = globalThis.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Quotation_${quotationNumber}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    globalThis.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("PDF export not supported or error:", error);
+    throw new Error("PDF export is not available");
+  }
 };

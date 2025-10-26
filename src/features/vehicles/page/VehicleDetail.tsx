@@ -12,7 +12,7 @@ import { VehicleFAQ } from "@/features/vehicles/component/VehicleFAQ";
 import { SimilarVehicles } from "@/features/vehicles/component/SimilarVehicles";
 import { VariantSummary } from "@/features/vehicles/component/VariantSummary";
 import { MobilePriceBar } from "@/features/vehicles/component/MobilePriceBar";
-import { QuotationModal } from "@/features/quotations/component/QuotationModal";
+import { QuotationModal } from "@/features/quotation/component/QuotationModal";
 
 export default function VehicleDetailPage() {
   const { id } = useParams<{ id: string }>();

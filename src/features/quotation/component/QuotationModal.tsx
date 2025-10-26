@@ -20,9 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2 } from "lucide-react";
 import { formatPrice } from "@/lib/format";
 import { toast } from "sonner";
-import { createQuotation } from "@/features/quotations/api";
-// import { generateQuotationPDF } from "@/features/quotations/utils/pdfGenerator"; // Assume a PDF generator util
-// import { sendQuotationEmail } from "@/features/quotations/utils/emailSender"; // Assume an email sender util
+import { createQuotation } from "@/features/quotation/api";
 import type { IVehicleVariant } from "@/types/vehicle";
 
 const quotationSchema = z.object({
@@ -72,7 +70,7 @@ export function QuotationModal({ open, onOpenChange, variant }: QuotationModalPr
         },
     });
 
-    const subtotalVehicle = variant.retailPrice;
+    const subtotalVehicle = variant.retail_price;
     const addOnsTotal = addOns.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     const subtotal = subtotalVehicle + addOnsTotal;
     const discountAmount = (subtotal * discountPercent) / 100;
@@ -105,10 +103,10 @@ export function QuotationModal({ open, onOpenChange, variant }: QuotationModalPr
                 notes: data.notes,
                 items: [
                     {
-                        variantId: variant._id,
+                        variantId: variant.variant_id,
                         description: `${variant.version} - ${variant.color}`,
                         quantity: 1,
-                        unitPrice: variant.retailPrice,
+                        unitPrice: variant.retail_price,
                         discountAmount: 0, 
                         lineTotal: subtotalVehicle,
                     },
@@ -130,10 +128,10 @@ export function QuotationModal({ open, onOpenChange, variant }: QuotationModalPr
             };
 
             const result = await createQuotation(quotationData);
-            setQuotationId(result._id); 
+            setQuotationId(result.quotation_id.toString()); 
 
             toast.success("Lưu nháp thành công!", {
-                description: `Báo giá #${result.quotationNumber} đã được lưu. Bạn có thể preview PDF hoặc gửi email.`,
+                description: `Báo giá #${result.quotation_number} đã được lưu. Bạn có thể preview PDF hoặc gửi email.`,
             });
 
         } catch (error) {
