@@ -1,5 +1,5 @@
 export interface Dealer {
-  _id: string;
+  dealer_id: string;
   dealer_name: string;
   address?: string;
   phone?: string;

@@ -29,7 +29,7 @@ export function VehicleFilters({
   bodyTypeCounts,
   vehicles
 }: Props) {
-  const bodyTypes = Array.from(new Set(vehicles.map((v) => v.bodyType)));
+  const bodyTypes = Array.from(new Set(vehicles.map((v) => v.body_type)));
   const isFilterApplied = searchQuery || filterBodyType !== "all" || filterRange !== "all";
 
   return (

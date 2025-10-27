@@ -33,7 +33,7 @@ export function VehicleList({ vehicles, isLoading, isError, refetch }: Props) {
         ) : vehicles.length === 0 ? (
           <p className="text-center text-gray-500 col-span-full">Không tìm thấy xe phù hợp.</p>
         ) : (
-          vehicles.map((v) => <VehicleCard key={v._id} vehicle={v} />)
+          vehicles.map((v) => <VehicleCard key={v.vehicle_id} vehicle={v} />)
         )}
       </motion.div>
     </AnimatePresence>

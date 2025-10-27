@@ -64,9 +64,9 @@ export function VehicleHeader({
           >
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-4xl font-bold">{vehicle?.modelName}</h1>
+                <h1 className="text-4xl font-bold">{vehicle?.model_name}</h1>
                 <Badge variant="secondary" className="text-base px-3 py-1 bg-white/20 text-white">
-                  {vehicle?.bodyType}
+                  {vehicle?.body_type}
                 </Badge>
               </div>
               <p className="text-white/80 max-w-lg">{vehicle?.description || "Không có mô tả"}</p>
@@ -74,9 +74,9 @@ export function VehicleHeader({
             <div className="text-right">
               <p className="text-sm text-white/80 mb-1">Giá từ</p>
               <p className="text-3xl font-bold">{formatPrice(minRetailPrice)}</p>
-              {selectedVariant?.discountPercent ? selectedVariant.discountPercent > 0 && (
+              {selectedVariant?.discount_percent ? selectedVariant.discount_percent > 0 && (
                 <Badge className="mt-2 bg-gradient-to-r from-green-500 to-lime-500 text-white">
-                  Tiết kiệm {selectedVariant.discountPercent}%!
+                  Tiết kiệm {selectedVariant.discount_percent}%!
                 </Badge>
               ) : null}
             </div>

@@ -1,5 +1,5 @@
-export interface Customer {
-  _id: string;
+export interface ICustomer {
+  customer_id: string;
   full_name: string;
   phone?: string;
   email?: string;

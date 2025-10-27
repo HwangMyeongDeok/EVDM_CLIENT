@@ -1,4 +1,8 @@
-export type UserRole = "DEALER_STAFF" | "DEALER_MANAGER" | "EVM_STAFF" | "ADMIN";
+export type UserRole =
+  | "DEALER_STAFF"
+  | "DEALER_MANAGER"
+  | "EVM_STAFF"
+  | "ADMIN";
 
 export type OrderStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
 
@@ -14,7 +18,7 @@ export type FeedbackStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED";
 
 export type DebtStatus = "PENDING" | "PAID" | "OVERDUE";
 
-export type QuotationStatus = "DRAFT" | "APPROVED" | "REJECTED";
+export type QuotationStatus = "DRAFT" | "SENT" | "APPROVED" | "REJECTED";
 
 export type RequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "PARTIAL";
 

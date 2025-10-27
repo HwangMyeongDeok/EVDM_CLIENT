@@ -56,13 +56,13 @@ export function VariantSelector({ vehicle, selectedVariantIdx, setSelectedVarian
                 <div className="space-y-2 pt-2 border-t border-border text-left">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Giá bán lẻ</span>
-                    <span className="font-bold text-primary">{formatPrice(variant.retailPrice || 0)}</span>
+                    <span className="font-bold text-primary">{formatPrice(variant.retail_price || 0)}</span>
                   </div>
-                  {variant.discountPercent ? variant.discountPercent > 0 && (
+                  {variant.discount_percent ? variant.discount_percent > 0 && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Giảm giá</span>
                       <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                        {variant.discountPercent}% OFF
+                        {variant.discount_percent}% OFF
                       </Badge>
                     </div>
                   ) : null}

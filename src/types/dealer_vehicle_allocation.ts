@@ -1,13 +1,14 @@
-export interface DealerVehicleAllocationItem {
-  variant_id: string;
-  allocated_quantity: number;
-}
+
 
 export interface DealerVehicleAllocation {
-  _id: string;
+  allocation_id: string;
   request_id?: string; 
   dealer_id: string;
-  items: DealerVehicleAllocationItem[];
+  variant_id: string;
+  allocated_quantity: number;
+  delivery_batch: string;
+  delivery_date?: string;
   allocation_date?: string;
   created_at?: string;
+  updated_at?: string;
 }
