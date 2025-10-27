@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card.tsx";
-import { Button } from "@/components/ui/button.tsx";
-import { Badge } from "@/components/ui/badge.tsx";
-
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -17,15 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog.tsx";
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,30 +28,48 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Trash2, Check, X, Plus, Pencil } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Trash2, Plus, Pencil, Search, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import {
   getQuotations,
   deleteQuotation,
-  approveQuotation,
-  rejectQuotation,
   type QuotationResponse,
+  type QuotationStatus,
 } from "../api";
 
+const statusConfig: Record<QuotationStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  DRAFT: { label: "Bản nháp", variant: "secondary" },
+  SENT: { label: "Đã gửi", variant: "default" },
+  APPROVED: { label: "Đã duyệt", variant: "default" },
+  REJECTED: { label: "Từ chối", variant: "destructive" },
+};
+
 export default function QuotationListPage() {
+  const navigate = useNavigate();
   const [quotations, setQuotations] = useState<QuotationResponse[]>([]);
+  const [filteredQuotations, setFilteredQuotations] = useState<QuotationResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedQuotation, setSelectedQuotation] =
-    useState<QuotationResponse | null>(null);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [quotationToDelete, setQuotationToDelete] = useState<string | null>(
-    null
-  );
+  const [quotationToDelete, setQuotationToDelete] = useState<number | null>(null);
+  
+  // Filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   useEffect(() => {
     fetchQuotations();
   }, []);
+
+  useEffect(() => {
+    filterQuotations();
+  }, [searchTerm, statusFilter, quotations]);
 
   const fetchQuotations = async () => {
     try {
@@ -67,20 +77,41 @@ export default function QuotationListPage() {
       const data = await getQuotations();
       setQuotations(data);
     } catch (error) {
-      toast.error("Failed to load quotations");
-      console.error(error);
+      console.error("Error fetching quotations:", error);
+      toast.error("Không thể tải danh sách báo giá");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleViewDetails = (quotation: QuotationResponse) => {
-    setSelectedQuotation(quotation);
-    setViewDialogOpen(true);
+  const filterQuotations = () => {
+    let filtered = [...quotations];
+
+    // Filter by search term (search in quotation number, customer name)
+    if (searchTerm) {
+      filtered = filtered.filter((q) => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          q.quotation_number.toLowerCase().includes(searchLower) ||
+          q.customer?.full_name.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Filter by status
+    if (statusFilter !== "ALL") {
+      filtered = filtered.filter((q) => q.status === statusFilter);
+    }
+
+    setFilteredQuotations(filtered);
   };
 
-  const handleDeleteClick = (id: string) => {
-    setQuotationToDelete(id);
+  const handleDeleteClick = (quotationId: number, status: QuotationStatus) => {
+    if (status !== "DRAFT") {
+      toast.error("Chỉ có thể xóa báo giá ở trạng thái Bản nháp");
+      return;
+    }
+    setQuotationToDelete(quotationId);
     setDeleteDialogOpen(true);
   };
 
@@ -89,60 +120,26 @@ export default function QuotationListPage() {
 
     try {
       await deleteQuotation(quotationToDelete);
-      toast.success("Quotation deleted successfully");
-      fetchQuotations();
-    } catch (error) {
-      toast.error("Failed to delete quotation");
-      console.error(error);
-    } finally {
+      toast.success("Đã xóa báo giá thành công");
       setDeleteDialogOpen(false);
       setQuotationToDelete(null);
-    }
-  };
-
-  const handleApprove = async (id: string) => {
-    try {
-      await approveQuotation(id);
-      toast.success("Quotation approved successfully");
       fetchQuotations();
     } catch (error) {
-      toast.error("Failed to approve quotation");
-      console.error(error);
+      console.error("Error deleting quotation:", error);
+      toast.error("Không thể xóa báo giá");
     }
   };
 
-  const handleReject = async (id: string) => {
-    try {
-      await rejectQuotation(id);
-      toast.success("Quotation rejected successfully");
-      fetchQuotations();
-    } catch (error) {
-      toast.error("Failed to reject quotation");
-      console.error(error);
-    }
-  };
-
-  const getStatusBadge = (status: QuotationResponse["status"]) => {
-    const statusConfig = {
-      DRAFT: { variant: "outline" as const, label: "Draft" },
-      SENT: { variant: "secondary" as const, label: "Sent" },
-      APPROVED: { variant: "default" as const, label: "Approved" },
-      REJECTED: { variant: "destructive" as const, label: "Rejected" },
-    };
-
-    const config = statusConfig[status] || { variant: "outline" as const, label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
-
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: string | number) => {
+    const numAmount = typeof amount === "string" ? Number.parseFloat(amount) : amount;
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(amount);
+    }).format(numAmount);
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("vi-VN", {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("vi-VN", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -151,275 +148,196 @@ export default function QuotationListPage() {
     });
   };
 
-  const getCustomerName = (customer: QuotationResponse["customer"]) => {
-    if (typeof customer === "string") return customer;
-    return customer.fullName;
+  // Get vehicle names from quotation items
+  const getVehicleNames = (quotation: QuotationResponse) => {
+    if (!quotation.items || quotation.items.length === 0) return "N/A";
+    
+    const vehicleNames = quotation.items
+      .map((item) => item.variant?.version || "N/A")
+      .filter((name, index, self) => self.indexOf(name) === index) // unique
+      .join(", ");
+    
+    return vehicleNames || "N/A";
   };
-
-  const getStaffName = (staff: QuotationResponse["staff"]) => {
-    if (typeof staff === "string") return staff;
-    return staff.fullName;
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Quotation Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Danh sách Báo giá</h1>
+          <p className="text-muted-foreground">
+            Quản lý tất cả báo giá cho khách hàng
+          </p>
         </div>
-        <Link to="/dealer/staff/quotations/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Quotation
-          </Button>
-        </Link>
+        <Button onClick={() => navigate("/dealer/staff/quotations/new")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Tạo báo giá mới
+        </Button>
       </div>
 
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Quotation List</CardTitle>
-          <CardDescription>
-            Total: {quotations.length} quotations
-          </CardDescription>
+          <CardTitle>Bộ lọc</CardTitle>
+          <CardDescription>Tìm kiếm và lọc báo giá</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Quotation No.</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Staff</TableHead>
-                <TableHead>Total Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {quotations.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    No quotations found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                quotations.map((quotation) => (
-                  <TableRow key={quotation._id}>
-                    <TableCell className="font-medium">
-                      {quotation.quotationNumber}
-                    </TableCell>
-                    <TableCell>{getCustomerName(quotation.customer)}</TableCell>
-                    <TableCell>{getStaffName(quotation.staff)}</TableCell>
-                    <TableCell>{formatCurrency(quotation.totalAmount)}</TableCell>
-                    <TableCell>{getStatusBadge(quotation.status)}</TableCell>
-                    <TableCell>{formatDate(quotation.createdAt)}</TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleViewDetails(quotation)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {quotation.status === "DRAFT" && (
-                          <>
-                            <Link to={`/dealer/staff/quotations/edit/${quotation._id}`}>
-                              <Button size="sm" variant="outline">
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleApprove(quotation._id)}
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                        {quotation.status === "DRAFT" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReject(quotation._id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteClick(quotation._id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm theo mã báo giá hoặc tên khách hàng..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+                <SelectItem value="DRAFT">Bản nháp</SelectItem>
+                <SelectItem value="SENT">Đã gửi</SelectItem>
+                <SelectItem value="APPROVED">Đã duyệt</SelectItem>
+                <SelectItem value="REJECTED">Từ chối</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
-      {/* View Details Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Quotation Details</DialogTitle>
-            <DialogDescription>
-              No: {selectedQuotation?.quotationNumber}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedQuotation && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Customer
-                  </div>
-                  <p className="text-sm">
-                    {getCustomerName(selectedQuotation.customer)}
-                  </p>
-                  {typeof selectedQuotation.customer !== "string" &&
-                    selectedQuotation.customer.phone && (
-                      <p className="text-xs text-muted-foreground">
-                        {selectedQuotation.customer.phone}
-                      </p>
-                    )}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Staff
-                  </div>
-                  <p className="text-sm">
-                    {getStaffName(selectedQuotation.staff)}
-                  </p>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Status
-                  </div>
-                  <div className="mt-1">
-                    {getStatusBadge(selectedQuotation.status)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Created Date
-                  </div>
-                  <p className="text-sm">
-                    {formatDate(selectedQuotation.createdAt)}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-medium mb-2">Items</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Quantity</TableHead>
-                      <TableHead className="text-right">Unit Price</TableHead>
-                      <TableHead className="text-right">Discount</TableHead>
-                      <TableHead className="text-right">Line Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedQuotation.items.map((item) => (
-                      <TableRow key={item.variantId}>
-                        <TableCell>{item.description || item.variantId}</TableCell>
-                        <TableCell className="text-right">
-                          {item.quantity}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(item.unitPrice)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(item.discountAmount || 0)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(item.lineTotal)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Subtotal:</span>
-                  <span className="text-sm font-medium">
-                    {formatCurrency(selectedQuotation.subtotal)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">
-                    Tax ({selectedQuotation.taxRate}%):
-                  </span>
-                  <span className="text-sm font-medium">
-                    {formatCurrency(selectedQuotation.taxAmount)}
-                  </span>
-                </div>
-                {selectedQuotation.discountTotal > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-sm">Total Discount:</span>
-                    <span className="text-sm font-medium text-red-600">
-                      -{formatCurrency(selectedQuotation.discountTotal)}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between border-t pt-2">
-                  <span className="font-bold">Grand Total:</span>
-                  <span className="font-bold text-lg">
-                    {formatCurrency(selectedQuotation.totalAmount)}
-                  </span>
-                </div>
-              </div>
-
-              {selectedQuotation.notes && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Notes
-                  </div>
-                  <p className="text-sm mt-1">{selectedQuotation.notes}</p>
-                </div>
+      {/* Table */}
+      <Card>
+        <CardContent className="pt-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredQuotations.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                {searchTerm || statusFilter !== "ALL"
+                  ? "Không tìm thấy báo giá nào"
+                  : "Chưa có báo giá nào"}
+              </p>
+              {!searchTerm && statusFilter === "ALL" && (
+                <Button
+                  onClick={() => navigate("/dealer/staff/quotations/new")}
+                  className="mt-4"
+                  variant="outline"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Tạo báo giá đầu tiên
+                </Button>
               )}
             </div>
+          ) : (
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mã báo giá</TableHead>
+                    <TableHead>Khách hàng</TableHead>
+                    <TableHead>Xe liên quan</TableHead>
+                    <TableHead className="text-right">Tổng giá</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Ngày tạo</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredQuotations.map((quotation) => (
+                    <TableRow key={quotation.quotation_id}>
+                      <TableCell className="font-medium">
+                        {quotation.quotation_number}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {quotation.customer?.full_name || "N/A"}
+                          </span>
+                          {quotation.customer?.phone && (
+                            <span className="text-xs text-muted-foreground">
+                              {quotation.customer.phone}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">
+                          {getVehicleNames(quotation)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {formatCurrency(quotation.total_amount)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusConfig[quotation.status].variant}>
+                          {statusConfig[quotation.status].label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(quotation.created_at)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {/* Convert to Contract button - only for non-DRAFT status */}
+                          {quotation.status !== "DRAFT" && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => navigate(`/dealer/staff/contracts/new?quotationId=${quotation.quotation_id}`)}
+                              title="Chuyển sang hợp đồng"
+                            >
+                              <FileText className="h-4 w-4 mr-1" />
+                              Hợp đồng
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/dealer/staff/quotations/edit/${quotation.quotation_id}`)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          {quotation.status === "DRAFT" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteClick(quotation.quotation_id, quotation.status)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </CardContent>
+      </Card>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this quotation? This action cannot be undone.
+              Bạn có chắc chắn muốn xóa báo giá này? Hành động này không thể hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm}>
-              Delete
+              Xóa
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

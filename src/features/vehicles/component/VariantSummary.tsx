@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Battery, Gauge, Users, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { QuotationModal } from "@/features/quotations/component/QuotationModal";
+import { QuotationModal } from "@/features/quotation/component/QuotationModal";
 import type { IVehicle } from "@/types/vehicle";
 import { getColorHex, formatPrice } from "@/lib/format";
 

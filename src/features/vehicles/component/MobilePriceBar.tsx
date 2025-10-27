@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/format";
-import { QuotationModal } from "@/features/quotations/component/QuotationModal";
+import { QuotationModal } from "@/features/quotation/component/QuotationModal";
 import type { IVehicleVariant } from "@/types/vehicle";
 
 export function MobilePriceBar({ selectedVariant }: { selectedVariant: IVehicleVariant }) {
