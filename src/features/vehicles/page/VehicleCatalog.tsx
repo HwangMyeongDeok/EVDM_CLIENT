@@ -10,11 +10,11 @@ export default function VehicleCatalog() {
   const [filterRange, setFilterRange] = useState<string>("all");
 
   const { data: vehicles = [], isLoading, isError, refetch } = useGetVehiclesQuery();
-
+console.log("first", vehicles)
   const bodyTypeCounts = useMemo(() => {
     const counts: Record<string, number> = { all: vehicles.length };
     vehicles.forEach((v) => {
-      counts[v.bodyType] = (counts[v.bodyType] || 0) + 1;
+      counts[v.body_type] = (counts[v.body_type] || 0) + 1;
     });
     return counts;
   }, [vehicles]);
@@ -22,13 +22,13 @@ export default function VehicleCatalog() {
   const filteredVehicles = useMemo(() => {
     return vehicles.filter((vehicle: IVehicle) => {
       const mainVariant = vehicle.variants[0];
-      const matchesSearch = vehicle.modelName.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesBodyType = filterBodyType === "all" || vehicle.bodyType === filterBodyType;
+      const matchesSearch = vehicle.model_name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesBodyType = filterBodyType === "all" || vehicle.body_type === filterBodyType;
       const matchesRange =
         filterRange === "all" ||
-        (filterRange === "under300" && (mainVariant?.rangeKm ?? 0) < 300) ||
-        (filterRange === "300-400" && (mainVariant?.rangeKm ?? 0) >= 300 && (mainVariant?.rangeKm ?? 0) < 400) ||
-        (filterRange === "over400" && (mainVariant?.rangeKm ?? 0) >= 400);
+        (filterRange === "under300" && (mainVariant?.range_km ?? 0) < 300) ||
+        (filterRange === "300-400" && (mainVariant?.range_km ?? 0) >= 300 && (mainVariant?.range_km ?? 0) < 400) ||
+        (filterRange === "over400" && (mainVariant?.range_km ?? 0) >= 400);
       return matchesSearch && matchesBodyType && matchesRange;
     });
   }, [vehicles, searchQuery, filterBodyType, filterRange]);

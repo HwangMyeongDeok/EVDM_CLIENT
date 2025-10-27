@@ -22,7 +22,7 @@ export function PerformanceSpecs({ vehicle, selectedVariant }: PerformanceSpecsP
                 <span className="text-sm font-medium">Tăng tốc (0-100km/h)</span>
               </div>
               <span className="text-xl font-bold text-red-600">
-                {selectedVariant?.acceleration0100 ? `${selectedVariant.acceleration0100}s` : "N/A"}
+                {selectedVariant?.acceleration_0_100 ? `${selectedVariant.acceleration_0_100}s` : "N/A"}
               </span>
             </div>
             <div className="flex flex-col gap-2">
@@ -31,7 +31,7 @@ export function PerformanceSpecs({ vehicle, selectedVariant }: PerformanceSpecsP
                 <span className="text-sm font-medium">Công suất</span>
               </div>
               <span className="text-xl font-bold text-yellow-600">
-                {selectedVariant?.motorPowerKw ? `${selectedVariant.motorPowerKw} kW` : "N/A"}
+                {selectedVariant?.motor_power_kw ? `${selectedVariant.motor_power_kw} kW` : "N/A"}
               </span>
             </div>
             <div className="flex flex-col gap-2">
@@ -40,7 +40,7 @@ export function PerformanceSpecs({ vehicle, selectedVariant }: PerformanceSpecsP
                 <span className="text-sm font-medium">Tốc độ tối đa</span>
               </div>
               <span className="text-xl font-bold text-orange-600">
-                {selectedVariant?.topSpeedKmh ? `${selectedVariant.topSpeedKmh} km/h` : "N/A"}
+                {selectedVariant?.top_speed_kmh ? `${selectedVariant.top_speed_kmh} km/h` : "N/A"}
               </span>
             </div>
             <div className="flex flex-col gap-2">
@@ -49,7 +49,7 @@ export function PerformanceSpecs({ vehicle, selectedVariant }: PerformanceSpecsP
                 <span className="text-sm font-medium">Thời gian sạc</span>
               </div>
               <span className="text-xl font-bold text-cyan-600">
-                {selectedVariant?.chargingTimeHours ? `${selectedVariant.chargingTimeHours} giờ` : "N/A"}
+                {selectedVariant?.charging_time_hours ? `${selectedVariant.charging_time_hours} giờ` : "N/A"}
               </span>
             </div>
             <div className="flex flex-col gap-2">
@@ -58,7 +58,7 @@ export function PerformanceSpecs({ vehicle, selectedVariant }: PerformanceSpecsP
                 <span className="text-sm font-medium">Bảo hành</span>
               </div>
               <span className="text-xl font-bold text-indigo-600">
-                {vehicle.warrantyYears ? `${vehicle.warrantyYears} năm` : "N/A"}
+                {vehicle.warranty_years ? `${vehicle.warranty_years} năm` : "N/A"}
               </span>
             </div>
           </div>

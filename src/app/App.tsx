@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "@/features/auth/page/LoginPage";
-import RequireAuth from "@/features/auth/guards/RequireAuth";
 import NotFoundPage from "@/features/misc/NotFoundPage";
 import DealerStaffDashboard from "@/features/dealer/staff/Dashboard";
 import { DealerStaffLayout } from "@/features/dealer/staff/dealer-staff-layout";
@@ -12,9 +11,13 @@ import { ContractFormPage } from "@/features/contract/page/ContractFormPage";
 import { ContractListPage } from "@/features/contract/page/ContractListPage";
 import VehicleCatalog from "@/features/vehicles/page/VehicleCatalog";
 import VehicleDetail from "@/features/vehicles/page/VehicleDetail";
-import QuotationListPage from "@/features/quotations/page/QuotationListpage";
-import QuotationCreatePage from "@/features/quotations/page/QuotationCreatePage";
 import PurchaseOrderForm from "@/features/order/page/PurchaseOrderForm";
+import QuotationListPage from "@/features/quotation/page/QuotationListPage";
+import QuotationCreatePage from "@/features/quotation/page/QuotationCreatePage";
+import ManufacturerOrderList from "@/features/order/page/ManufacturerOrderList";
+import ManufacturerOrderDetail from "@/features/order/page/ManufacturerOrderDetail";
+
+
 
 
 export default function App() {
@@ -33,6 +36,7 @@ export default function App() {
             path="/dealer/staff/dashboard"
             element={<DealerStaffDashboard />}
           />
+
             <Route
               path="/dealer/staff/PaymentFormPage"
               element={<PaymentFormPage />}
@@ -41,6 +45,7 @@ export default function App() {
               path="/dealer/staff/PaymentHistoryPage"
               element={<PaymentHistoryPage />}
             />
+
             
           <Route path="/dealer/staff/vehicles" element={<VehicleCatalog />} />
           <Route path="/dealer/staff/vehicles/:id" element={<VehicleDetail />} />
@@ -51,7 +56,11 @@ export default function App() {
           <Route path="/dealer/staff/quotations" element={<QuotationListPage />} />
           <Route path="/dealer/staff/quotations/new" element={<QuotationCreatePage />} />
           <Route path="/dealer/manager/purchase-orders/new" element={<PurchaseOrderForm />} />
+          <Route path="/evm/staff/orders" element={<ManufacturerOrderList />} />
+          <Route path="/evm/staff/orders/:id" element={<ManufacturerOrderDetail />} />  
+
         </Route>
+        
 
 
         <Route path="*" element={<NotFoundPage />} />

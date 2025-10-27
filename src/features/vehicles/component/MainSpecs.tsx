@@ -21,7 +21,7 @@ export function MainSpecs({ vehicle, selectedVariant }: MainSpecsProps) {
               <span className="text-sm font-medium">Quãng đường</span>
             </div>
             <span className="text-3xl font-bold text-green-600">
-              {selectedVariant?.rangeKm ? `${selectedVariant.rangeKm} km` : "N/A"}
+              {selectedVariant?.range_km ? `${selectedVariant.range_km} km` : "N/A"}
             </span>
           </div>
           <div className="flex flex-col gap-2">

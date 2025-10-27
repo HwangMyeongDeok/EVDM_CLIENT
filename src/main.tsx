@@ -8,7 +8,7 @@ import { Toaster } from "sonner";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AppProvider>
-       <Toaster />
+       <Toaster position="top-right"/>
       <App />
     </AppProvider>
   </StrictMode>
