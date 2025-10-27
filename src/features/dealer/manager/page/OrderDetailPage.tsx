@@ -83,28 +83,11 @@ export default function OrderDetailPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Chi tiết đơn hàng</h1>
-          <p className="text-muted-foreground">
-            Xem xét và phê duyệt đơn hàng từ đại lý
-          </p>
-        </div>
-        <div className="flex gap-4">
-          <Button
-            variant="outline"
-            onClick={() => handleUpdateStatus("REJECTED")}
-            disabled={loading || order.status !== "PENDING"}
-          >
-            Từ chối
-          </Button>
-          <Button
-            onClick={() => handleUpdateStatus("APPROVED")}
-            disabled={loading || order.status !== "PENDING"}
-          >
-            Đồng ý
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Chi tiết đơn hàng</h1>
+        <p className="text-muted-foreground">
+          Xem xét và phê duyệt đơn hàng từ đại lý
+        </p>
       </div>
 
       {/* Thông tin đơn hàng */}
@@ -259,6 +242,23 @@ export default function OrderDetailPage() {
           ))}
         </CardContent>
       </Card>
+
+      {/* Nút điều khiển */}
+      <div className="flex justify-end gap-4 mt-6">
+        <Button
+          variant="outline"
+          onClick={() => handleUpdateStatus("REJECTED")}
+          disabled={loading || order.status !== "PENDING"}
+        >
+          Từ chối
+        </Button>
+        <Button
+          onClick={() => handleUpdateStatus("APPROVED")}
+          disabled={loading || order.status !== "PENDING"}
+        >
+          Đồng ý
+        </Button>
+      </div>
     </div>
   );
 }
