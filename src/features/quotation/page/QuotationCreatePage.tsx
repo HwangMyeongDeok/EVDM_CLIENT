@@ -24,26 +24,27 @@ import type { ICustomer } from "@/types/customer";
   type ItemRow = {
     variant_id: number | "";
     quantity: number;
-    manual_discount_vnd: number;  
+    manual_discount_vnd: number; 
     manual_discount_percent: number; 
     applied_promo_amount: number; 
   };
 
 export default function QuotationCreatePage() {
   const navigate = useNavigate();
-  const { variantId } = useParams<{ variantId?: string }>();
+  const { variantId } = useParams<{ variantId?: string }>(); 
 
   const [customers, setCustomers] = useState<ICustomer[]>([]);
   const [vehicles, setVehicles] = useState<IVehicle[]>([]);
   const [variants, setVariants] = useState<IVehicleVariant[]>([]);
-  const [promotionsLookup, setPromotionsLookup] = useState<Record<number, number>>({}); 
+  const [promotionsLookup, setPromotionsLookup] = useState<Record<number, number>>({});
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [isNewCustomer, setIsNewCustomer] = useState(false);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(""); 
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [customerSearch, setCustomerSearch] = useState("");
   const [customerSearchResults, setCustomerSearchResults] = useState<ICustomer[]>([]);
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [searching, setSearching] = useState(false); 
@@ -56,7 +57,6 @@ export default function QuotationCreatePage() {
     paymentTerms: "",
     notes: "",
   });
-
 
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<ItemRow[]>([
@@ -254,7 +254,7 @@ useEffect(() => {
 
     try {
       setLoading(true);
-      await createQuotation(payload); 
+      await createQuotation(payload);
       toast.success("Tạo báo giá thành công");
       navigate("/dealer/staff/quotations");
     } catch (err: any) {
