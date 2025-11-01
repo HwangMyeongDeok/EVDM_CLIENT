@@ -39,4 +39,4 @@ export interface IVehicle {
   description?: string;
   image_urls?: string[] | null;
   variants: IVehicleVariant[];
-}
+} 

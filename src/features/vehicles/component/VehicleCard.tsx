@@ -11,7 +11,7 @@ const formatPrice = (price?: number) =>
 
 export function VehicleCard({ vehicle }: { vehicle: IVehicle }) {
   const mainVariant = vehicle.variants?.[0];
-  console.log("dasda", vehicle.variants)
+  console.log("dasda", vehicle)
   const mainImage =
     Array.isArray(vehicle.image_urls)
       ? vehicle.image_urls[0]

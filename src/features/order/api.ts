@@ -2,63 +2,67 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { axiosBaseQuery } from "@/lib/axiosBaseQuery";
 import type { DealerVehicleRequest } from "@/types/dealer_vehicle_request";
 
-export const orderApi = createApi({
-  reducerPath: "orderApi",
+export const dealerRequestApi = createApi({
+  reducerPath: "dealerRequestApi",
   baseQuery: axiosBaseQuery(),
-  tagTypes: ["Order"],
+  tagTypes: ["DealerRequest"],
   keepUnusedDataFor: 60,
 
   endpoints: (builder) => ({
-    getOrders: builder.query<DealerVehicleRequest[], void>({
-      query: () => ({ url: "/orders", method: "GET" }),
+    // Lấy danh sách yêu cầu
+    getDealerRequests: builder.query<DealerVehicleRequest[], void>({
+      query: () => ({ url: "/dealer-requests", method: "GET" }),
       transformResponse: (response: {
         success: boolean;
-        count?: number;
         data: DealerVehicleRequest[];
       }) => response.data,
       providesTags: (result) =>
         result
           ? [
               ...result.map(({ request_id }) => ({
-                type: "Order" as const,
+                type: "DealerRequest" as const,
                 id: request_id,
               })),
-              { type: "Order", id: "LIST" },
+              { type: "DealerRequest", id: "LIST" },
             ]
-          : [{ type: "Order", id: "LIST" }],
+          : [{ type: "DealerRequest", id: "LIST" }],
     }),
 
-    getOrderById: builder.query<DealerVehicleRequest, string>({
-      query: (id) => ({ url: `/orders/${id}`, method: "GET" }),
+    // Lấy yêu cầu theo ID
+    getDealerRequestById: builder.query<DealerVehicleRequest, string>({
+      query: (id) => ({ url: `/dealer-requests/${id}`, method: "GET" }),
       transformResponse: (response: {
         success: boolean;
         data: DealerVehicleRequest;
       }) => response.data,
-      providesTags: (result, error, id) => [{ type: "Order", id }],
+      providesTags: (result, error, id) => [{ type: "DealerRequest", id }],
     }),
 
-    createOrder: builder.mutation<
+    // Tạo yêu cầu mới
+    createDealerRequest: builder.mutation<
       DealerVehicleRequest,
       Partial<DealerVehicleRequest>
     >({
       query: (body) => ({
-        url: "/orders",
+        url: "/dealer-requests",
         method: "POST",
-        data: body,
+        body: body,
       }),
       transformResponse: (response: {
         success: boolean;
         data: DealerVehicleRequest;
       }) => response.data,
-      invalidatesTags: [{ type: "Order", id: "LIST" }],
+      
+      invalidatesTags: [{ type: "DealerRequest", id: "LIST" }],
     }),
 
-    updateOrderStatus: builder.mutation<
+    // Cập nhật trạng thái yêu cầu
+    updateDealerRequestStatus: builder.mutation<
       DealerVehicleRequest,
       { id: string; status: "APPROVED" | "REJECTED" | "PARTIAL" }
     >({
       query: ({ id, status }) => ({
-        url: `/orders/${id}/status`,
+        url: `/dealer-requests/${id}/status`,
         method: "PATCH",
         data: { status },
       }),
@@ -67,25 +71,29 @@ export const orderApi = createApi({
         data: DealerVehicleRequest;
       }) => response.data,
       invalidatesTags: (result, error, { id }) => [
-        { type: "Order", id },
-        { type: "Order", id: "LIST" },
+        { type: "DealerRequest", id },
+        { type: "DealerRequest", id: "LIST" },
       ],
     }),
 
-    deleteOrder: builder.mutation<{ success: boolean; id: string }, string>({
-      query: (id) => ({
-        url: `/orders/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: [{ type: "Order", id: "LIST" }],
-    }),
+    // Xóa yêu cầu
+    deleteDealerRequest: builder.mutation<{ success: boolean; id: string }, string>(
+      {
+        query: (id) => ({
+          url: `/dealer-requests/${id}`,
+          method: "DELETE",
+        }),
+        transformResponse: (response: { success: boolean; id: string }) => response,
+        invalidatesTags: [{ type: "DealerRequest", id: "LIST" }],
+      }
+    ),
   }),
 });
 
 export const {
-  useGetOrdersQuery,
-  useGetOrderByIdQuery,
-  useCreateOrderMutation,
-  useUpdateOrderStatusMutation,
-  useDeleteOrderMutation,
-} = orderApi;
+  useGetDealerRequestsQuery,
+  useGetDealerRequestByIdQuery,
+  useCreateDealerRequestMutation,
+  useUpdateDealerRequestStatusMutation,
+  useDeleteDealerRequestMutation,
+} = dealerRequestApi;
