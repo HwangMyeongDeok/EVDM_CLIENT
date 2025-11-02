@@ -14,6 +14,7 @@ import VehicleCatalog from "@/features/vehicles/page/VehicleCatalog";
 import QuotationListPage from "@/features/quotation/page/QuotationListPage";
 import QuotationCreatePage from "@/features/quotation/page/QuotationCreatePage";
 import VehicleDetailPage from "@/features/vehicles/page/VehicleDetail";
+import PaymentTestPage from "@/features/payments/page/ContractPaymentPage";
 
 
 export default function App() {
@@ -53,6 +54,9 @@ export default function App() {
           <Route path="/dealer/staff/quotations/new" element={<QuotationCreatePage />} />
           <Route path="/dealer/staff/quotations/create/:variantId" element={<QuotationCreatePage />} />
           <Route path="/dealer/staff/quotations/edit/:id" element={<QuotationCreatePage />} />
+
+        <Route path="/dealer/staff/payment-test/:contractId?" element={<PaymentTestPage />} />
+
         </Route>
 
 
