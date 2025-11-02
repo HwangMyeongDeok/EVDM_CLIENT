@@ -119,7 +119,6 @@ export default function ManufacturerDealerRequestDetail() {
               <TableRow>
                 <TableCell>{request.variant_id}</TableCell>
                 <TableCell>{request.requested_quantity}</TableCell>
-                <TableCell>{request.note || "—"}</TableCell>
               </TableRow>
             </TableBody>
           </Table>

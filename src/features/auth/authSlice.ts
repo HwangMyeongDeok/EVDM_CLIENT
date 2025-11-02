@@ -12,7 +12,9 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  user: null,
+   user: localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user") as string)
+    : null,
   accessToken: localStorage.getItem("access_token"),
   refreshToken: localStorage.getItem("refresh_token"),
   loading: false,
@@ -46,6 +48,7 @@ const authSlice = createSlice({
 
         localStorage.setItem("access_token", action.payload.access_token);
         localStorage.setItem("refresh_token", action.payload.refresh_token);
+        localStorage.setItem("user", JSON.stringify(action.payload.user));
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;

@@ -19,24 +19,26 @@ export const dealerRequestApi = createApi({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ request_id }) => ({
-                type: "DealerRequest" as const,
-                id: request_id,
-              })),
-              { type: "DealerRequest", id: "LIST" },
-            ]
+            ...result.map(({ request_id }) => ({
+              type: "DealerRequest" as const,
+              id: request_id,
+            })),
+            { type: "DealerRequest", id: "LIST" },
+          ]
           : [{ type: "DealerRequest", id: "LIST" }],
     }),
 
     // Lấy yêu cầu theo ID
     getDealerRequestById: builder.query<DealerVehicleRequest, string>({
-      query: (id) => ({ url: `/dealer-requests/${id}`, method: "GET" }),
-      transformResponse: (response: {
-        success: boolean;
-        data: DealerVehicleRequest;
-      }) => response.data,
+      query: (id) => ({ url: `/api/v1/dealer-requests/${id}`, method: "GET" }),
+      transformResponse: (response: any) => {
+        console.log("🔍 DealerRequestById response:", response);
+        if (response?.data) return response.data; // dạng { success, data }
+        return response; // dạng object trực tiếp
+      },
       providesTags: (result, error, id) => [{ type: "DealerRequest", id }],
     }),
+
 
     // Tạo yêu cầu mới
     createDealerRequest: builder.mutation<
@@ -52,28 +54,20 @@ export const dealerRequestApi = createApi({
         success: boolean;
         data: DealerVehicleRequest;
       }) => response.data,
-      
+
       invalidatesTags: [{ type: "DealerRequest", id: "LIST" }],
     }),
 
     // Cập nhật trạng thái yêu cầu
-    updateDealerRequestStatus: builder.mutation<
-      DealerVehicleRequest,
-      { id: string; status: "APPROVED" | "REJECTED" | "PARTIAL" }
-    >({
+    updateDealerRequestStatus: builder.mutation({
       query: ({ id, status }) => ({
-        url: `/dealer-requests/${id}/status`,
+        url:
+          status === "APPROVED"
+            ? `/dealer-requests/${id}/approve`
+            : `/dealer-requests/${id}/reject`,
         method: "PATCH",
-        data: { status },
+        body: status === "REJECTED" ? { reason: "Bị từ chối bởi nhà sản xuất" } : undefined,
       }),
-      transformResponse: (response: {
-        success: boolean;
-        data: DealerVehicleRequest;
-      }) => response.data,
-      invalidatesTags: (result, error, { id }) => [
-        { type: "DealerRequest", id },
-        { type: "DealerRequest", id: "LIST" },
-      ],
     }),
 
     // Xóa yêu cầu
@@ -87,7 +81,15 @@ export const dealerRequestApi = createApi({
         invalidatesTags: [{ type: "DealerRequest", id: "LIST" }],
       }
     ),
+    getManufacturerRequests: builder.query<DealerVehicleRequest[], void>({
+      query: () => ({
+        url: "/dealer-requests/manufacturer",
+        method: "GET",
+      }),
+      transformResponse: (res: any) => res.data ?? [],
+    }),
   }),
+
 });
 
 export const {
@@ -96,4 +98,5 @@ export const {
   useCreateDealerRequestMutation,
   useUpdateDealerRequestStatusMutation,
   useDeleteDealerRequestMutation,
+  useGetManufacturerRequestsQuery,
 } = dealerRequestApi;

@@ -1,222 +1,521 @@
-import { useState, useMemo } from "react"
-import { useNavigate } from "react-router-dom"
-import { Search, Plus, Eye, Pencil } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { mockContracts, mockCustomers } from "../data"
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Trash2, 
+  Plus, 
+  Pencil, 
+  Search, 
+  Loader2, 
+  CheckCircle, 
+  XCircle,
+  FileDown,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  getContracts,
+  approveContract,
+  deleteContract,
+} from "../api";
+import type { ContractResponse, ContractStatus } from "../types";
 
-const CONTRACT_STATUS_COLORS = {
-  DRAFT: "bg-muted text-muted-foreground",
-  PENDING_SIGN: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
-  SIGNED: "bg-green-500/10 text-green-700 dark:text-green-400",
-  IN_PROGRESS: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
-  COMPLETED: "bg-green-600/10 text-green-800 dark:text-green-300",
-  CANCELLED: "bg-destructive/10 text-destructive",
-}
+const statusConfig: Record<ContractStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  DRAFT: { label: "Bản nháp", variant: "secondary" },
+  PENDING_APPROVAL: { label: "Chờ duyệt", variant: "outline" },
+  APPROVED: { label: "Đã duyệt", variant: "default" },
+  REJECTED: { label: "Từ chối", variant: "destructive" },
+  SIGNED: { label: "Đã ký", variant: "default" },
+  COMPLETED: { label: "Hoàn tất", variant: "default" },
+  CANCELLED: { label: "Đã hủy", variant: "destructive" },
+};
 
-const PAYMENT_STATUS_COLORS = {
-  UNPAID: "bg-destructive/10 text-destructive",
-  PARTIAL: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
-  PAID: "bg-green-500/10 text-green-700 dark:text-green-400",
-}
+// Mock current user role (TODO: get from auth context)
+const CURRENT_USER_ROLE = "manager"; // Change to "staff" to test staff view
 
-export function ContractListPage() {
-  const navigate = useNavigate()
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [paymentFilter, setPaymentFilter] = useState<string>("all")
-  const [page, setPage] = useState(1)
-  const limit = 5
+export default function ContractListPage() {
+  const navigate = useNavigate();
+  const [contracts, setContracts] = useState<ContractResponse[]>([]);
+  const [filteredContracts, setFilteredContracts] = useState<ContractResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [contractToDelete, setContractToDelete] = useState<number | null>(null);
+  const [contractToApprove, setContractToApprove] = useState<ContractResponse | null>(null);
+  const [approvalAction, setApprovalAction] = useState<"APPROVED" | "REJECTED">("APPROVED");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [processingApproval, setProcessingApproval] = useState(false);
+  
+  // Filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
-  const filteredContracts = useMemo(() => {
-    let filtered = mockContracts.map((contract) => ({
-      ...contract,
-      customer: mockCustomers.find((c) => c.customer_id === contract.customer_id),
-    }))
+  useEffect(() => {
+    fetchContracts();
+  }, []);
 
-    if (search) {
-      const searchLower = search.toLowerCase()
-      filtered = filtered.filter(
-        (contract) =>
-          contract.contract_code.toLowerCase().includes(searchLower) ||
-          contract.customer?.full_name.toLowerCase().includes(searchLower),
-      )
+  useEffect(() => {
+    filterContracts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, statusFilter, contracts]);
+
+  const fetchContracts = async () => {
+    try {
+      setLoading(true);
+      const data = await getContracts();
+      setContracts(data);
+    } catch (error) {
+      console.error("Error fetching contracts:", error);
+      toast.error("Không thể tải danh sách hợp đồng");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterContracts = () => {
+    let filtered = [...contracts];
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter((c) => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          c.contract_number.toLowerCase().includes(searchLower) ||
+          c.customer?.full_name.toLowerCase().includes(searchLower)
+        );
+      });
     }
 
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((contract) => contract.contract_status === statusFilter)
+    // Filter by status
+    if (statusFilter !== "ALL") {
+      filtered = filtered.filter((c) => c.status === statusFilter);
     }
 
-    if (paymentFilter !== "all") {
-      filtered = filtered.filter((contract) => contract.payment_status === paymentFilter)
+    setFilteredContracts(filtered);
+  };
+
+  const handleDeleteClick = (contractId: number, status: ContractStatus) => {
+    if (status !== "DRAFT") {
+      toast.error("Chỉ có thể xóa hợp đồng ở trạng thái Bản nháp");
+      return;
+    }
+    setContractToDelete(contractId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!contractToDelete) return;
+
+    try {
+      await deleteContract(contractToDelete);
+      toast.success("Đã xóa hợp đồng thành công");
+      setDeleteDialogOpen(false);
+      setContractToDelete(null);
+      fetchContracts();
+    } catch (error) {
+      console.error("Error deleting contract:", error);
+      toast.error("Không thể xóa hợp đồng");
+    }
+  };
+
+  const handleApprovalClick = (contract: ContractResponse, action: "APPROVED" | "REJECTED") => {
+    if (CURRENT_USER_ROLE !== "manager") {
+      toast.error("Chỉ Manager mới có quyền duyệt hợp đồng");
+      return;
+    }
+    
+    if (contract.status !== "PENDING_APPROVAL") {
+      toast.error("Chỉ có thể duyệt hợp đồng ở trạng thái Chờ duyệt");
+      return;
     }
 
-    return filtered
-  }, [search, statusFilter, paymentFilter])
+    setContractToApprove(contract);
+    setApprovalAction(action);
+    setRejectionReason("");
+    setApprovalDialogOpen(true);
+  };
 
-  const paginatedContracts = useMemo(() => {
-    const start = (page - 1) * limit
-    return filteredContracts.slice(start, start + limit)
-  }, [filteredContracts, page])
+  const handleApprovalConfirm = async () => {
+    if (!contractToApprove) return;
 
-  const totalPages = Math.ceil(filteredContracts.length / limit)
+    if (approvalAction === "REJECTED" && !rejectionReason.trim()) {
+      toast.error("Vui lòng nhập lý do từ chối");
+      return;
+    }
 
-  const formatCurrency = (amount: number) => {
+    try {
+      setProcessingApproval(true);
+      await approveContract(contractToApprove.contract_id, {
+        status: approvalAction,
+        rejectionReason: approvalAction === "REJECTED" ? rejectionReason : undefined,
+      });
+
+      toast.success(
+        approvalAction === "APPROVED"
+          ? "Đã duyệt hợp đồng thành công"
+          : "Đã từ chối hợp đồng"
+      );
+
+      setApprovalDialogOpen(false);
+      setContractToApprove(null);
+      setRejectionReason("");
+      fetchContracts();
+    } catch (error) {
+      console.error("Error approving contract:", error);
+      toast.error("Không thể xử lý yêu cầu duyệt");
+    } finally {
+      setProcessingApproval(false);
+    }
+  };
+
+  const formatCurrency = (amount: string | number) => {
+    const numAmount = typeof amount === "string" ? Number.parseFloat(amount) : amount;
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(amount)
-  }
+    }).format(numAmount);
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("vi-VN", {
       year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
+      month: "2-digit",
+      day: "2-digit",
+    });
+  };
+
+  const getVehicleNames = (contract: ContractResponse) => {
+    if (!contract.items || contract.items.length === 0) return "N/A";
+    
+    const vehicleNames = contract.items
+      .map((item) => item.variant?.version || "N/A")
+      .filter((name: string, index: number, self: string[]) => self.indexOf(name) === index)
+      .join(", ");
+    
+    return vehicleNames || "N/A";
+  };
+
+  const handleExportReport = () => {
+    toast.info("Tính năng xuất báo cáo sẽ được triển khai sau");
+    // TODO: Implement export to Excel/PDF
+  };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Contracts</h1>
-          <p className="text-muted-foreground">Manage customer vehicle sales agreements</p>
+          <h1 className="text-3xl font-bold tracking-tight">Danh sách Hợp đồng</h1>
+          <p className="text-muted-foreground">
+            Quản lý hợp đồng mua bán xe điện
+          </p>
         </div>
-        <Button onClick={() => navigate("/dealer/staff/contracts/new")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Contract
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportReport}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Xuất báo cáo
+          </Button>
+          <Button onClick={() => navigate("/dealer/staff/contracts/new")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Tạo hợp đồng mới
+          </Button>
+        </div>
       </div>
 
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filter Contracts</CardTitle>
+          <CardTitle>Bộ lọc</CardTitle>
+          <CardDescription>Tìm kiếm và lọc hợp đồng</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by contract code or customer..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm theo mã hợp đồng hoặc tên khách hàng..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Contract Status" />
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Trạng thái" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="PENDING_SIGN">Pending Sign</SelectItem>
-                <SelectItem value="SIGNED">Signed</SelectItem>
-                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                <SelectItem value="COMPLETED">Completed</SelectItem>
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Payment Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Payment Status</SelectItem>
-                <SelectItem value="UNPAID">Unpaid</SelectItem>
-                <SelectItem value="PARTIAL">Partial</SelectItem>
-                <SelectItem value="PAID">Paid</SelectItem>
+                <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+                <SelectItem value="DRAFT">Bản nháp</SelectItem>
+                <SelectItem value="PENDING_APPROVAL">Chờ duyệt</SelectItem>
+                <SelectItem value="APPROVED">Đã duyệt</SelectItem>
+                <SelectItem value="REJECTED">Từ chối</SelectItem>
+                <SelectItem value="SIGNED">Đã ký</SelectItem>
+                <SelectItem value="COMPLETED">Hoàn tất</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </CardContent>
       </Card>
 
+      {/* Table */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Contract Code</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Contract Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Payment Status</TableHead>
-                <TableHead className="text-right">Final Amount</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedContracts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    No contracts found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedContracts.map((contract) => (
-                  <TableRow key={contract.contract_id}>
-                    <TableCell className="font-medium">{contract.contract_code}</TableCell>
-                    <TableCell>{contract.customer?.full_name || "N/A"}</TableCell>
-                    <TableCell>{formatDate(contract.contract_date)}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={CONTRACT_STATUS_COLORS[contract.contract_status]}>
-                        {contract.contract_status.replace("_", " ")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={PAYMENT_STATUS_COLORS[contract.payment_status]}>
-                        {contract.payment_status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(contract.final_amount)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => navigate(`/dealer/staff/contracts/${contract.contract_id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => navigate(`/dealer/staff/contracts/${contract.contract_id}/edit`)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+        <CardContent className="pt-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredContracts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                {searchTerm || statusFilter !== "ALL"
+                  ? "Không tìm thấy hợp đồng nào"
+                  : "Chưa có hợp đồng nào"}
+              </p>
+              {!searchTerm && statusFilter === "ALL" && (
+                <Button
+                  onClick={() => navigate("/dealer/staff/contracts/new")}
+                  className="mt-4"
+                  variant="outline"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Tạo hợp đồng đầu tiên
+                </Button>
               )}
-            </TableBody>
-          </Table>
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mã hợp đồng</TableHead>
+                    <TableHead>Khách hàng</TableHead>
+                    <TableHead>Xe</TableHead>
+                    <TableHead className="text-right">Tổng giá</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Ngày tạo</TableHead>
+                    <TableHead>Người duyệt</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredContracts.map((contract) => (
+                    <TableRow key={contract.contract_id}>
+                      <TableCell className="font-medium">
+                        {contract.contract_number}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {contract.customer?.full_name || "N/A"}
+                          </span>
+                          {contract.customer?.phone && (
+                            <span className="text-xs text-muted-foreground">
+                              {contract.customer.phone}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">
+                          {getVehicleNames(contract)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {formatCurrency(contract.total_amount)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusConfig[contract.status].variant}>
+                          {statusConfig[contract.status].label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(contract.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        {contract.approver ? (
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">
+                              {contract.approver.full_name}
+                            </span>
+                            {contract.approved_at && (
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(contract.approved_at)}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {/* Edit button */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/dealer/staff/contracts/edit/${contract.contract_id}`)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+
+                          {/* Approval buttons (Manager only, PENDING_APPROVAL status) */}
+                          {CURRENT_USER_ROLE === "manager" && contract.status === "PENDING_APPROVAL" && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={() => handleApprovalClick(contract, "APPROVED")}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleApprovalClick(contract, "REJECTED")}
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+
+                          {/* Delete button (DRAFT only) */}
+                          {contract.status === "DRAFT" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteClick(contract.contract_id, contract.status)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * limit + 1} to {Math.min(page * limit, filteredContracts.length)} of{" "}
-            {filteredContracts.length} contracts
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setPage(page - 1)} disabled={page === 1}>
-              Previous
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa hợp đồng này? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Approval Dialog */}
+      <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {approvalAction === "APPROVED" ? "Duyệt hợp đồng" : "Từ chối hợp đồng"}
+            </DialogTitle>
+            <DialogDescription>
+              {approvalAction === "APPROVED"
+                ? `Bạn có chắc chắn muốn duyệt hợp đồng ${contractToApprove?.contract_number}?`
+                : `Vui lòng nhập lý do từ chối hợp đồng ${contractToApprove?.contract_number}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {approvalAction === "REJECTED" && (
+            <div className="space-y-2">
+              <Label htmlFor="rejectionReason">Lý do từ chối *</Label>
+              <Textarea
+                id="rejectionReason"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Nhập lý do từ chối hợp đồng..."
+                rows={4}
+              />
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setApprovalDialogOpen(false)}
+              disabled={processingApproval}
+            >
+              Hủy
             </Button>
-            <Button variant="outline" onClick={() => setPage(page + 1)} disabled={page >= totalPages}>
-              Next
+            <Button
+              onClick={handleApprovalConfirm}
+              disabled={processingApproval}
+              variant={approvalAction === "APPROVED" ? "default" : "destructive"}
+            >
+              {processingApproval ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : approvalAction === "APPROVED" ? (
+                <CheckCircle className="mr-2 h-4 w-4" />
+              ) : (
+                <XCircle className="mr-2 h-4 w-4" />
+              )}
+              {approvalAction === "APPROVED" ? "Duyệt" : "Từ chối"}
             </Button>
-          </div>
-        </div>
-      )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
+  );
 }

@@ -28,6 +28,7 @@ export default function AuthGuard({
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    console.log("User role not authorized:", user.role);
     return <Navigate to={unauthorizedRedirect} state={{ from: location }} replace />;
   }
 

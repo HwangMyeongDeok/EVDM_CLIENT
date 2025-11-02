@@ -6,19 +6,20 @@ import { DealerStaffLayout } from "@/features/dealer/staff/dealer-staff-layout";
 import UnauthorizedPage from "@/features/misc/UnauthorizedPage";
 import AuthGuard from "@/features/auth/guards/AuthGuard";
 import PaymentFormPage from "@/features/dealer/staff/page/PaymentFormPage";
-import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage";
-import { ContractFormPage } from "@/features/contract/page/ContractFormPage";
-import { ContractListPage } from "@/features/contract/page/ContractListPage";
+import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage"; 
 import VehicleCatalog from "@/features/vehicles/page/VehicleCatalog";
-import VehicleDetail from "@/features/vehicles/page/VehicleDetail";
 import PurchaseOrderForm from "@/features/order/page/PurchaseOrderForm";
 import QuotationListPage from "@/features/quotation/page/QuotationListPage";
 import QuotationCreatePage from "@/features/quotation/page/QuotationCreatePage";
 import ManufacturerOrderList from "@/features/order/page/ManufacturerOrderList";
 import ManufacturerOrderDetail from "@/features/order/page/ManufacturerOrderDetail";
+import ContractListPage from "@/features/contract/page/ContractListPage";
+import ContractFormPage from "@/features/contract/page/ContractFormPage";
+import RequireAuth from "@/features/auth/guards/RequireAuth";
 
-
-
+import VehicleDetailPage from "@/features/vehicles/page/VehicleDetail";
+import OrderRequestList from "@/features/order/page/OrderRequestList";
+import DealerRequestDetail from "@/features/order/page/DealerRequestDetail";
 
 export default function App() {
   return (
@@ -30,7 +31,7 @@ export default function App() {
         <Route path="/" element={<AuthGuard />} />
 
 
-        {/* <Route element={<RequireAuth allowedRoles={["DEALER_MANAGER"]} />}> */}
+        <Route element={<RequireAuth allowedRoles={["DEALER_STAFF"]} />}>
         <Route element={<DealerStaffLayout />}>
           <Route
             path="/dealer/staff/dashboard"
@@ -48,19 +49,32 @@ export default function App() {
 
             
           <Route path="/dealer/staff/vehicles" element={<VehicleCatalog />} />
-          <Route path="/dealer/staff/vehicles/:id" element={<VehicleDetail />} />
+          <Route path="/dealer/staff/vehicles/:id" element={<VehicleDetailPage />} />
           <Route path="/dealer/staff/contracts" element={<ContractListPage />} />
           <Route path="/dealer/staff/contracts/new" element={<ContractFormPage />} />
-          <Route path="/dealer/staff/contracts/:id" element={<ContractFormPage />} />
-
+          <Route path="/dealer/staff/contracts/edit/:id" element={<ContractFormPage />} />
           <Route path="/dealer/staff/quotations" element={<QuotationListPage />} />
-          <Route path="/dealer/staff/quotations/new" element={<QuotationCreatePage />} />
-          <Route path="/dealer/manager/purchase-orders/new" element={<PurchaseOrderForm />} />
-          <Route path="/evm/staff/orders" element={<ManufacturerOrderList />} />
-          <Route path="/evm/staff/orders/:id" element={<ManufacturerOrderDetail />} />  
-
+          <Route path="/dealer/staff/quotations/new" element={<QuotationCreatePage />} />        
+          <Route path="/dealer/staff/quotations/create/:variantId" element={<QuotationCreatePage />} />
+          <Route path="/dealer/staff/quotations/edit/:id" element={<QuotationCreatePage />} />
         </Route>
-        
+        </Route>
+
+
+      <Route element={<RequireAuth allowedRoles={["DEALER_MANAGER"]} />}>
+        <Route element={<DealerStaffLayout />}>
+          <Route path="/dealer/manager/purchase-orders/new" element={<PurchaseOrderForm />} />
+          <Route path="/dealer/manager/purchase-orders/list" element={<OrderRequestList />} />
+          <Route path="/dealer/manager/purchase-orders/:requestCode" element={<DealerRequestDetail />} /> 
+      </Route>
+      </Route>
+
+      <Route element={<RequireAuth allowedRoles={["EVM_STAFF"]} />}>
+        <Route element={<DealerStaffLayout />}>
+          <Route path="/evm/staff/orders" element={<ManufacturerOrderList />} />
+          <Route path="/evm/staff/orders/:id" element={<ManufacturerOrderDetail />} />         
+      </Route>
+      </Route>
 
 
         <Route path="*" element={<NotFoundPage />} />
