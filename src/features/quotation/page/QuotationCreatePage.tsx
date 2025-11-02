@@ -5,38 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash2, Save, User, Phone, Mail, Home, ShoppingCart, Sparkles, RotateCcw, Loader2 } from "lucide-react";
+import { Plus, Trash2, Save, User, Phone, Mail, Home, ShoppingCart, Sparkles, RotateCcw, Loader2, Percent } from "lucide-react";
 import { toast } from "sonner";
 import instance from "@/lib/axios";
 import { formatPrice } from "@/lib/format";
 import { createQuotation } from "../api";
 import type { IVehicle, IVehicleVariant } from "@/types/vehicle";
 import type { ICustomer } from "@/types/customer";
-  type ItemRow = {
-    variant_id: number | "";
-    quantity: number;
-    manual_discount_vnd: number; 
-    manual_discount_percent: number; 
-    applied_promo_amount: number; 
-  };
+
+type AppliedPromoCode = {
+  code: string;
+  amount_vnd: number;
+  description?: string;
+};
 
 export default function QuotationCreatePage() {
   const navigate = useNavigate();
-  const { variantId } = useParams<{ variantId?: string }>(); 
+  const { variantId } = useParams<{ variantId?: string }>();
 
   const [customers, setCustomers] = useState<ICustomer[]>([]);
-  const [vehicles, setVehicles] = useState<IVehicle[]>([]);
-  const [variants, setVariants] = useState<IVehicleVariant[]>([]);
-  const [promotionsLookup, setPromotionsLookup] = useState<Record<number, number>>({});
+  const [vehicle, setVehicle] = useState<IVehicle | null>(null);
+  const [variant, setVariant] = useState<IVehicleVariant | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -47,7 +38,7 @@ export default function QuotationCreatePage() {
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerSearchResults, setCustomerSearchResults] = useState<ICustomer[]>([]);
   const [creatingCustomer, setCreatingCustomer] = useState(false);
-  const [searching, setSearching] = useState(false); 
+  const [searching, setSearching] = useState(false);
 
   const [newCustomer, setNewCustomer] = useState({
     full_name: "",
@@ -59,37 +50,35 @@ export default function QuotationCreatePage() {
   });
 
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<ItemRow[]>([
-    {
-      variant_id: variantId ? Number(variantId) : "",
-      quantity: 1,
-      manual_discount_vnd: 0,
-      manual_discount_percent: 0,
-      applied_promo_amount: 0,
-    },
-  ]);
 
-useEffect(() => {
-  if (!customerSearch.trim()) {
-    setCustomerSearchResults(customers);
-    return;
-  }
+  // New states for promo code
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedPromoCode, setAppliedPromoCode] = useState<AppliedPromoCode | null>(null);
+  const [applyingPromo, setApplyingPromo] = useState(false);
 
-  const term = customerSearch.toLowerCase();
+  useEffect(() => {
+    if (!customerSearch.trim()) {
+      setCustomerSearchResults(customers);
+      setSearching(false);
+      return;
+    }
 
-  const t = setTimeout(() => {
-    const filtered = customers.filter((c) => {
-      return (
-        c.full_name?.toLowerCase().includes(term) ||
-        c.phone?.toLowerCase().includes(term) ||
-        c.email?.toLowerCase().includes(term)
-      );
-    });
-    setCustomerSearchResults(filtered);
-  }, 150);
+    setSearching(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await instance.get("/customers/search", { params: { query: customerSearch.trim() } });
+        setCustomerSearchResults(res.data.data || []);
+      } catch (err) {
+        console.error(err);
+        toast.error("Tìm kiếm thất bại");
+        setCustomerSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
 
-  return () => clearTimeout(t);
-}, [customerSearch, customers]);
+    return () => clearTimeout(t);
+  }, [customerSearch, customers]);
 
 
   useEffect(() => {
@@ -97,36 +86,20 @@ useEffect(() => {
     async function loadAll() {
       try {
         setInitialLoading(true);
-        const [vRes] = await Promise.all([instance.get("/vehicles")]);
-        const vehiclesData: IVehicle[] = vRes.data.data || [];
+
+        // 🟢 1️⃣ Lấy chi tiết variant và xe tương ứng
+        const variantRes = await instance.get(`/vehicle-variants/${variantId}`);
+        const variantData: IVehicleVariant = variantRes.data.data;
+
+        // Nếu muốn lấy luôn thông tin xe gốc của variant (để hiển thị tên model, ảnh, ...)
+        const vehicleRes = await instance.get(`/vehicles/${variantData.vehicle_id}`);
+        const vehicleData: IVehicle = vehicleRes.data.data;
+
         if (!mounted) return;
-        setVehicles(vehiclesData);
+        setVehicle(vehicleData);
+        setVariant(variantData);
 
-        const allVariants: IVehicleVariant[] = [];
-        for (const v of vehiclesData) {
-          try {
-            const r = await instance.get(`/vehicles/${v.vehicle_id}/variants`);
-            allVariants.push(...(r.data.data || []));
-          } catch (err) {
-            console.warn("variant fetch failed for vehicle", v.vehicle_id, err);
-          }
-        }
-        if (!mounted) return;
-        setVariants(allVariants);
-
-        try {
-          const promoRes = await instance.get("/promotions", {
-            params: { variant_ids: allVariants.map((x) => x.variant_id).join(",") },
-          });
-          const promos: Array<{ variant_id: number; amount_vnd: number }> = promoRes.data.data || [];
-          const lookup: Record<number, number> = {};
-          promos.forEach((p) => (lookup[p.variant_id] = p.amount_vnd ?? 0));
-          if (!mounted) return;
-          setPromotionsLookup(lookup);
-        } catch (err) {
-          console.info("no promotions or promotions fetch failed", err);
-        }
-
+        // 🔵 3️⃣ Lấy recent customers
         try {
           const recent = await instance.get("/customers", { params: { recent: 10 } });
           if (!mounted) return;
@@ -143,63 +116,25 @@ useEffect(() => {
     }
     loadAll();
     return () => { mounted = false; };
-  }, []);
-
-  const getVariantInfo = (variant_id: number | "") => {
-    if (!variant_id) return null;
-    const variant = variants.find((v) => v.variant_id === variant_id);
-    if (!variant) return null;
-    const vehicle = vehicles.find((veh) => veh.vehicle_id === variant.vehicle_id);
-    return { variant, vehicle };
-  };
-
-  useEffect(() => {
-    setItems((prev) =>
-      prev.map((it) => ({
-        ...it,
-        applied_promo_amount: it.variant_id ? (promotionsLookup[it.variant_id] ?? 0) : 0,
-      }))
-    );
-  }, [promotionsLookup]);
+  }, [variantId]);
 
   const totals = useMemo(() => {
-    let subtotal = 0;
-    let promoTotal = 0;
-    let manualDiscountTotal = 0;
-    for (const it of items) {
-      const info = getVariantInfo(it.variant_id);
-      const unit = info?.variant.retail_price ?? 0;
-      const base = unit * it.quantity;
-      const promo = it.applied_promo_amount ?? 0;
-      const manualDiscountFromPercent = (it.manual_discount_percent / 100) * base;
-      const manualDiscount = (it.manual_discount_vnd ?? 0) + manualDiscountFromPercent;
-      const lineNet = Math.max(0, base - promo - manualDiscount);
-      subtotal += lineNet;
-      promoTotal += promo;
-      manualDiscountTotal += manualDiscount;
-    }
+    const unit = variant?.retail_price ?? 0;
+    const subtotal = unit * 1;
+    const promoCodeDiscount = appliedPromoCode ? appliedPromoCode.amount_vnd : 0;
+    const discountedSubtotal = Math.max(0, subtotal - promoCodeDiscount);
     const taxRate = 10;
-    const taxAmount = subtotal * (taxRate / 100);
-    const total = subtotal + taxAmount;
+    const taxAmount = discountedSubtotal * (taxRate / 100);
+    const total = discountedSubtotal + taxAmount;
     return {
       subtotal,
-      promoTotal,
-      manualDiscountTotal,
+      promoCodeDiscount,
+      discountedSubtotal,
       taxRate,
       taxAmount,
       total,
     };
-  }, [items, variants, promotionsLookup]);
-
-  const addRow = () =>
-    setItems((s) => [
-      ...s,
-      { variant_id: "", quantity: 1, manual_discount_vnd: 0, manual_discount_percent: 0, applied_promo_amount: 0 },
-    ]);
-  const removeRow = (idx: number) =>
-    setItems((s) => (s.length === 1 ? s : s.filter((_, i) => i !== idx)));
-  const updateRow = (idx: number, patch: Partial<ItemRow>) =>
-    setItems((s) => s.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  }, [variant, appliedPromoCode]);
 
   const handleCreateCustomer = async () => {
     if (!newCustomer.full_name || !newCustomer.phone) {
@@ -228,18 +163,44 @@ useEffect(() => {
     }
   };
 
+  // New function to apply promo code
+  const handleApplyPromoCode = async () => {
+    if (!promoCode.trim()) {
+      return toast.error("Vui lòng nhập mã khuyến mãi");
+    }
+    try {
+      setApplyingPromo(true);
+      const res = await instance.post("/promotions/apply-code", {
+        code: promoCode.trim(),
+        subtotal: totals.subtotal,
+      });
+      const applied: AppliedPromoCode = res.data.data;
+      setAppliedPromoCode(applied);
+      toast.success(`Áp dụng mã ${applied.code} thành công: -${formatPrice(applied.amount_vnd)}`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Mã khuyến mãi không hợp lệ");
+      setAppliedPromoCode(null);
+    } finally {
+      setApplyingPromo(false);
+    }
+  };
+
+  const handleRemovePromoCode = () => {
+    setAppliedPromoCode(null);
+    setPromoCode("");
+    toast.success("Đã xóa mã khuyến mãi");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isNewCustomer && !selectedCustomerId) return toast.error("Vui lòng chọn khách hàng");
     if (isNewCustomer && (!newCustomer.full_name || !newCustomer.phone)) return toast.error("Vui lòng nhập thông tin khách hàng mới");
-    if (items.some((it) => !it.variant_id || it.quantity <= 0)) return toast.error("Vui lòng chọn xe hợp lệ và số lượng");
+    if (!variantId) return toast.error("Vui lòng chọn xe hợp lệ");
 
     const payload: any = {
       notes: notes || undefined,
-      items: items.map((it) => ({
-        variant_id: Number(it.variant_id),
-        quantity: it.quantity,
-      })),
+      variant_id: Number(variantId),
     };
 
     if (isNewCustomer) payload.customer = {
@@ -251,6 +212,10 @@ useEffect(() => {
       notes: newCustomer.notes || undefined,
     };
     else payload.customer_id = Number(selectedCustomerId);
+
+    if (appliedPromoCode) {
+      payload.promo_code = appliedPromoCode.code;
+    }
 
     try {
       setLoading(true);
@@ -265,9 +230,8 @@ useEffect(() => {
     }
   };
 
-  const variantLabel = (v: IVehicleVariant) => {
-    const veh = vehicles.find((x) => x.vehicle_id === v.vehicle_id);
-    return `${veh?.model_name || "Xe"} — ${v.version} (${v.color})`;
+  const variantLabel = () => {
+    return `${vehicle?.model_name || "Xe"} — ${variant?.version} (${variant?.color})`;
   };
 
   if (initialLoading) {
@@ -285,9 +249,18 @@ useEffect(() => {
   if (error) {
     return (
       <div className="p-6 text-center">
-      <p className="text-red-500 mb-4">{error}</p>
-      <Button onClick={() => window.location.reload()}>Tải lại</Button>
-    </div>
+        <p className="text-red-500 mb-4">{error}</p>
+        <Button onClick={() => window.location.reload()}>Tải lại</Button>
+      </div>
+    );
+  }
+
+  if (!variant || !vehicle) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-red-500 mb-4">Không tìm thấy thông tin xe.</p>
+        <Button onClick={() => navigate(-1)}>Quay lại</Button>
+      </div>
     );
   }
 
@@ -608,9 +581,10 @@ useEffect(() => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Danh sách xe</CardTitle>
-          <CardDescription>Chọn phiên bản, số lượng; thêm nhiều dòng nếu cần</CardDescription>
+          <CardTitle>Thông tin xe</CardTitle>
+          <CardDescription>Phiên bản xe đã được chọn từ trang chi tiết</CardDescription>
         </CardHeader>
+
         <CardContent>
           <Table>
             <TableHeader>
@@ -618,102 +592,81 @@ useEffect(() => {
                 <TableHead>Phiên bản</TableHead>
                 <TableHead className="w-24 text-right">SL</TableHead>
                 <TableHead className="w-40 text-right">Đơn giá</TableHead>
-                <TableHead className="w-40 text-right">Khuyến mãi</TableHead>
-                <TableHead className="w-48 text-right">Giảm thủ công (VNĐ / %)</TableHead>
                 <TableHead className="w-40 text-right">Thành tiền</TableHead>
-                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
+
             <TableBody>
-              {items.map((row, idx) => {
-                const info = row.variant_id ? getVariantInfo(row.variant_id) : null;
-                const unit = info?.variant.retail_price ?? 0;
-                const promo = row.applied_promo_amount ?? 0;
-                const manualPercent = row.manual_discount_percent ?? 0;
-                const manualVnd = row.manual_discount_vnd ?? 0;
-                const base = unit * row.quantity;
-                const manualFromPercent = (manualPercent / 100) * base;
-                const net = Math.max(0, base - promo - manualFromPercent - manualVnd);
+              <TableRow>
+                <TableCell>
+                  <div className="font-medium">{variantLabel()}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {vehicle?.model_name}
+                  </div>
+                </TableCell>
 
-                return (
-                  <TableRow key={idx}>
-                    <TableCell>
-                      <Select
-                        value={String(row.variant_id || "")}
-                        onValueChange={(val) => {
-                          const vid = val ? Number(val) : "";
-                          const promoAmount = vid ? (promotionsLookup[vid] ?? 0) : 0;
-                          updateRow(idx, { variant_id: vid, applied_promo_amount: promoAmount });
-                        }}
-                      >
-                        <SelectTrigger className="w-[360px]">
-                          <SelectValue placeholder={info ? variantLabel(info.variant) : "Chọn phiên bản"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {variants.map((v) => (
-                            <SelectItem key={v.variant_id} value={String(v.variant_id)}>
-                              {variantLabel(v)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <div className="text-xs text-muted-foreground mt-1">{info ? `${info.vehicle?.model_name}` : ""}</div>
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <Input
-                        type="number"
-                        min={1}
-                        value={row.quantity}
-                        onChange={(e) => updateRow(idx, { quantity: Number(e.target.value) || 1 })}
-                      />
-                    </TableCell>
-
-                    <TableCell className="text-right">{formatPrice(unit)}</TableCell>
-
-                    <TableCell className="text-right">
-                      <div className="text-sm">{promo > 0 ? `-${formatPrice(promo)}` : "—"}</div>
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <div className="flex items-center gap-2 justify-end">
-                        <Input
-                          type="number"
-                          placeholder="VND"
-                          value={row.manual_discount_vnd}
-                          onChange={(e) => updateRow(idx, { manual_discount_vnd: Number(e.target.value) || 0 })}
-                          className="w-28"
-                        />
-                        <Input
-                          type="number"
-                          placeholder="%"
-                          value={row.manual_discount_percent}
-                          onChange={(e) => updateRow(idx, { manual_discount_percent: Number(e.target.value) || 0 })}
-                          className="w-20"
-                        />
-                      </div>
-                    </TableCell>
-
-                    <TableCell className="text-right font-medium">{formatPrice(net)}</TableCell>
-
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => removeRow(idx)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                <TableCell className="text-right">1</TableCell>
+                <TableCell className="text-right">{formatPrice(variant.retail_price)}</TableCell>
+                <TableCell className="text-right font-medium">{formatPrice(variant.retail_price)}</TableCell>
+              </TableRow>
             </TableBody>
           </Table>
-
-          <div className="mt-4">
-            <Button type="button" variant="outline" size="sm" onClick={addRow}>
-              <Plus className="mr-2 w-4 h-4" /> Thêm dòng
-            </Button>
-          </div>
         </CardContent>
       </Card>
+
+      {/* New Card for Promo Code */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Áp dụng mã khuyến mãi</CardTitle>
+          <CardDescription>Nhập mã code để nhận thêm ưu đãi cho báo giá này</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Nhập mã khuyến mãi (VD: SALE2025)"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value)}
+              className="flex-1"
+              disabled={appliedPromoCode !== null}
+            />
+            <Button
+              type="button"
+              onClick={handleApplyPromoCode}
+              disabled={applyingPromo || !promoCode.trim() || appliedPromoCode !== null}
+            >
+              {applyingPromo ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Percent className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+          {appliedPromoCode && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-md space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-green-800">Đã áp dụng: {appliedPromoCode.code}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemovePromoCode}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-sm text-green-700">{appliedPromoCode.description || `Giảm ${formatPrice(appliedPromoCode.amount_vnd)}`}</p>
+            </div>
+          )}
+          {!appliedPromoCode && promoCode.trim() && (
+            <p className="text-sm text-muted-foreground">Nhấn "Áp dụng" để kiểm tra mã.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      
+      
+      
+
+
 
       <Card>
         <CardHeader>
@@ -723,15 +676,17 @@ useEffect(() => {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Tạm tính</span>
-              <span>{formatPrice(totals.subtotal + totals.promoTotal + totals.manualDiscountTotal)}</span>
+              <span>{formatPrice(totals.subtotal)}</span>
             </div>
+            {appliedPromoCode && (
+              <div className="flex justify-between">
+                <span>Mã khuyến mãi ({appliedPromoCode.code})</span>
+                <span>- {formatPrice(totals.promoCodeDiscount)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
-              <span>Khuyến mãi (tổng)</span>
-              <span>- {formatPrice(totals.promoTotal)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Giảm thủ công (tổng)</span>
-              <span>- {formatPrice(totals.manualDiscountTotal)}</span>
+              <span>Tạm sau khuyến mãi</span>
+              <span>{formatPrice(totals.discountedSubtotal)}</span>
             </div>
             <div className="flex justify-between">
               <span>VAT ({totals.taxRate}%)</span>

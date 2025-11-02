@@ -24,5 +24,4 @@ export interface IQuotation {
   total_amount: number;
   notes?: string;
   approved_by?: string;
-  items: IQuotationItem[];
 }
