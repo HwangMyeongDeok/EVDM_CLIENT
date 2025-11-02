@@ -44,7 +44,6 @@ import { useGetVehiclesQuery } from "@/features/vehicles/api";
 import { getQuotationById } from "@/features/quotation/api";
 
 // Mock current user (TODO: get from auth context)
-const CURRENT_USER_ID = 1;
 
 interface ContractItem {
   variant_id: number;

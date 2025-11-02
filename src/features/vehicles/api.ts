@@ -16,7 +16,7 @@ export const vehicleApi = createApi({
     getVehicleById: builder.query<IVehicle, string>({
       query: (id) => ({ url: `/vehicles/${id}` }),
       transformResponse: (response: { success: boolean; data: IVehicle }) => response.data,
-      providesTags: (result, error, id) => [{ type: 'Vehicle', id }],
+      providesTags: (_result, _error, id) => [{ type: 'Vehicle', id }],
     }),
     createVehicle: builder.mutation<IVehicle, Partial<IVehicle>>({
       query: (body) => ({
@@ -34,7 +34,7 @@ export const vehicleApi = createApi({
         body,
       }),
       transformResponse: (response: { success: boolean; data: IVehicle }) => response.data,
-      invalidatesTags: (result, error, { id }) => [{ type: 'Vehicle', id }],
+      invalidatesTags: (_result, _error, { id }) => [{ type: 'Vehicle', id }],
     }),
     deleteVehicle: builder.mutation<{ success: boolean; id: string }, string>({
       query: (id) => ({
