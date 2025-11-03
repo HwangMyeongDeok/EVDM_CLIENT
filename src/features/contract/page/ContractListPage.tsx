@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { 
+import {
   Trash2, 
   Plus, 
   Pencil, 
@@ -54,6 +54,9 @@ import {
   CheckCircle, 
   XCircle,
   FileDown,
+  FileText,
+  Download,
+  CreditCard,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -243,6 +246,21 @@ export default function ContractListPage() {
     // TODO: Implement export to Excel/PDF
   };
 
+  const handleExportPDF = (_contractId: number) => {
+    toast.info("Đang xuất file PDF...");
+    // TODO: Implement PDF export
+    // Call API: exportContractPDF(contractId)
+  };
+
+  const handlePayment = (contractId: number) => {
+    navigate(`/dealer/staff/payments/new?contractId=${contractId}`);
+  };
+
+  // Check if contract is editable
+  const isEditable = (status: ContractStatus) => {
+    return status === "DRAFT" || status === "PENDING_APPROVAL";
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -337,6 +355,7 @@ export default function ContractListPage() {
                     <TableHead>Xe</TableHead>
                     <TableHead className="text-right">Tổng giá</TableHead>
                     <TableHead>Trạng thái</TableHead>
+                    <TableHead>Trạng thái duyệt</TableHead>
                     <TableHead>Ngày tạo</TableHead>
                     <TableHead>Người duyệt</TableHead>
                     <TableHead className="text-right">Thao tác</TableHead>
@@ -373,6 +392,29 @@ export default function ContractListPage() {
                           {statusConfig[contract.status].label}
                         </Badge>
                       </TableCell>
+                      
+                      {/* New Approval Status Column */}
+                      <TableCell>
+                        {contract.status === "PENDING_APPROVAL" && (
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                            Chờ duyệt
+                          </Badge>
+                        )}
+                        {contract.status === "APPROVED" && (
+                          <Badge variant="default" className="bg-green-50 text-green-700 border-green-300">
+                            Đã duyệt
+                          </Badge>
+                        )}
+                        {contract.status === "REJECTED" && (
+                          <Badge variant="destructive">
+                            Từ chối
+                          </Badge>
+                        )}
+                        {(contract.status === "DRAFT" || contract.status === "SIGNED" || contract.status === "COMPLETED") && (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(contract.created_at)}
                       </TableCell>
@@ -394,14 +436,53 @@ export default function ContractListPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          {/* Edit button */}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => navigate(`/dealer/staff/contracts/edit/${contract.contract_id}`)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          {/* View/Edit button */}
+                          {isEditable(contract.status) ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/dealer/staff/contracts/edit/${contract.contract_id}`)}
+                              title="Chỉnh sửa hợp đồng"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/dealer/staff/contracts/view/${contract.contract_id}`)}
+                              title="Xem chi tiết"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          )}
+
+                          {/* Export PDF button (for approved contracts) */}
+                          {contract.status === "APPROVED" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleExportPDF(contract.contract_id)}
+                              title="Xuất file PDF"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
+
+                          {/* Payment button (for approved contracts) */}
+                          {contract.status === "APPROVED" && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => handlePayment(contract.contract_id)}
+                              title="Thanh toán"
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CreditCard className="h-4 w-4 mr-1" />
+                              Thanh toán
+                            </Button>
+                          )}
 
                           {/* Approval buttons (Manager only, PENDING_APPROVAL status) */}
                           {CURRENT_USER_ROLE === "manager" && contract.status === "PENDING_APPROVAL" && (
@@ -411,6 +492,7 @@ export default function ContractListPage() {
                                 variant="outline"
                                 className="text-green-600 hover:text-green-700 hover:bg-green-50"
                                 onClick={() => handleApprovalClick(contract, "APPROVED")}
+                                title="Duyệt hợp đồng"
                               >
                                 <CheckCircle className="h-4 w-4" />
                               </Button>
@@ -419,6 +501,7 @@ export default function ContractListPage() {
                                 variant="outline"
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => handleApprovalClick(contract, "REJECTED")}
+                                title="Từ chối hợp đồng"
                               >
                                 <XCircle className="h-4 w-4" />
                               </Button>
@@ -431,6 +514,7 @@ export default function ContractListPage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleDeleteClick(contract.contract_id, contract.status)}
+                              title="Xóa hợp đồng"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>

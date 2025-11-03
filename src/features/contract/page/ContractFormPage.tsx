@@ -38,13 +38,16 @@ import {
   getContractById,
   submitContractForApproval,
 } from "../api";
-import type { CreateContractDto, ContractResponse, PaymentTerms } from "../types";
+import type { CreateContractDto, ContractResponse } from "../types";
 import { useGetCustomersQuery } from "@/features/customers/api";
 import { useGetVehiclesQuery } from "@/features/vehicles/api";
 import { getQuotationById } from "@/features/quotation/api";
 
 // Mock current user (TODO: get from auth context)
 const CURRENT_USER_ID = 1;
+
+// Updated payment method type
+type PaymentMethod = "FULL_PAYMENT" | "DEPOSIT";
 
 interface ContractItem {
   variant_id: number;
@@ -53,6 +56,10 @@ interface ContractItem {
   discount_amount: string;
   version?: string;
   color?: string;
+  batteryCapacity?: string;
+  range?: string;
+  motor?: string;
+  chargingTime?: string;
 }
 
 interface UploadedFile {
@@ -88,24 +95,67 @@ export default function ContractFormPage() {
   const [taxAmount, setTaxAmount] = useState("0");
   const [totalAmount, setTotalAmount] = useState("0");
 
-  // Payment terms
-  const [paymentTerms, setPaymentTerms] = useState<PaymentTerms>("CASH");
+  // Payment terms - Updated
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("FULL_PAYMENT");
   const [depositAmount, setDepositAmount] = useState("0");
   const [depositPercentage, setDepositPercentage] = useState("30");
-  const [installmentMonths, setInstallmentMonths] = useState("12");
-  const [monthlyPayment, setMonthlyPayment] = useState("0");
 
   // Delivery
   const [deliveryDeadline, setDeliveryDeadline] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
 
-  // Terms & Conditions
-  const [termsAndConditions, setTermsAndConditions] = useState(`1. Khách hàng đồng ý với các điều khoản và điều kiện trong hợp đồng này.
-2. Đặt cọc không hoàn lại trong trường hợp khách hàng hủy đơn hàng.
-3. Thời gian giao xe có thể thay đổi tùy thuộc vào tình hình sản xuất và vận chuyển.
-4. Khách hàng có trách nhiệm kiểm tra xe khi nhận hàng.
-5. Bảo hành theo chính sách của nhà sản xuất.`);
+  // Terms & Conditions - Updated with comprehensive terms
+  const [termsAndConditions, setTermsAndConditions] = useState(`ĐIỀU KHOẢN VÀ ĐIỀU KIỆN HỢP ĐỒNG MUA BÁN XE ĐIỆN
+
+Điều 1: Đối tượng của hợp đồng
+1.1. Bên bán cam kết bán và giao xe điện cho Bên mua theo đúng quy cách, chủng loại, số lượng và giá cả như đã thỏa thuận trong hợp đồng này.
+1.2. Bên mua cam kết mua và thanh toán đầy đủ cho Bên bán theo các điều khoản đã thỏa thuận.
+
+Điều 2: Giá trị hợp đồng và phương thức thanh toán
+2.1. Tổng giá trị hợp đồng đã bao gồm thuế VAT và các chi phí liên quan.
+2.2. Bên mua thanh toán theo phương thức đã chọn (thanh toán toàn bộ hoặc đặt cọc).
+2.3. Trong trường hợp đặt cọc, Bên mua phải thanh toán số tiền còn lại trước khi nhận xe.
+2.4. Tiền đặt cọc sẽ không được hoàn lại nếu Bên mua đơn phương hủy hợp đồng.
+
+Điều 3: Thời gian và địa điểm giao xe
+3.1. Bên bán cam kết giao xe theo đúng thời hạn đã thỏa thuận trong hợp đồng.
+3.2. Địa điểm giao xe được xác định cụ thể trong hợp đồng.
+3.3. Trong trường hợp chậm giao xe do lỗi của Bên bán, Bên mua có quyền hủy hợp đồng và được hoàn lại toàn bộ số tiền đã thanh toán.
+
+Điều 4: Nghĩa vụ và quyền lợi của Bên bán
+4.1. Giao xe đúng chủng loại, số lượng, chất lượng và thời gian đã cam kết.
+4.2. Cung cấp đầy đủ giấy tờ xe, sách hướng dẫn sử dụng và chứng từ bảo hành.
+4.3. Hướng dẫn Bên mua sử dụng xe và các thao tác bảo dưỡng cơ bản.
+4.4. Được nhận đầy đủ số tiền thanh toán theo hợp đồng.
+
+Điều 5: Nghĩa vụ và quyền lợi của Bên mua
+5.1. Thanh toán đầy đủ và đúng hạn theo thỏa thuận.
+5.2. Kiểm tra xe khi nhận hàng và ký xác nhận tình trạng xe.
+5.3. Được hưởng chế độ bảo hành theo quy định của nhà sản xuất.
+5.4. Từ chối nhận xe nếu xe không đúng quy cách hoặc có khuyết tật.
+
+Điều 6: Bảo hành
+6.1. Xe được bảo hành theo chính sách của nhà sản xuất.
+6.2. Bảo hành không áp dụng trong các trường hợp: sử dụng sai mục đích, tự ý sửa chữa, tai nạn, thiên tai.
+6.3. Chi phí bảo dưỡng định kỳ do Bên mua chịu.
+
+Điều 7: Chuyển giao quyền sở hữu và rủi ro
+7.1. Quyền sở hữu xe chuyển cho Bên mua khi đã thanh toán đầy đủ.
+7.2. Rủi ro đối với xe chuyển cho Bên mua khi đã ký biên bản bàn giao.
+
+Điều 8: Trách nhiệm do vi phạm hợp đồng
+8.1. Bên vi phạm hợp đồng phải bồi thường thiệt hại cho bên bị vi phạm.
+8.2. Trường hợp bất khả kháng, các bên được miễn trừ trách nhiệm theo quy định pháp luật.
+
+Điều 9: Giải quyết tranh chấp
+9.1. Mọi tranh chấp phát sinh sẽ được giải quyết thông qua thương lượng.
+9.2. Nếu không thương lượng được, tranh chấp sẽ được đưa ra Tòa án có thẩm quyền giải quyết.
+
+Điều 10: Điều khoản cuối cùng
+10.1. Hợp đồng có hiệu lực kể từ ngày ký.
+10.2. Hợp đồng được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản.
+10.3. Mọi sửa đổi, bổ sung hợp đồng phải được lập thành văn bản và có chữ ký của cả hai bên.`);
 
   // File uploads
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -191,7 +241,7 @@ export default function ContractFormPage() {
     setSubtotal(contract.subtotal);
     setTaxAmount(contract.tax_amount);
     setTotalAmount(contract.total_amount);
-    setPaymentTerms(contract.payment_terms);
+    setPaymentMethod(contract.payment_terms as PaymentMethod);
     setDepositAmount(contract.deposit_amount || "0");
     setDeliveryDeadline(contract.delivery_deadline || "");
     setDeliveryAddress(contract.delivery_address || "");
@@ -199,7 +249,7 @@ export default function ContractFormPage() {
     setInternalNotes(contract.notes || "");
   };
 
-  // Calculate totals
+  // Calculate totals - Updated
   const calculateTotals = (contractItems: ContractItem[]) => {
     const sub = contractItems.reduce((sum, item) => {
       const price = parseFloat(item.unit_price) || 0;
@@ -215,24 +265,20 @@ export default function ContractFormPage() {
     setTaxAmount(tax.toFixed(2));
     setTotalAmount(total.toFixed(2));
 
-    // Calculate deposit (default 30%)
-    const depositPct = parseFloat(depositPercentage) || 30;
-    const deposit = (total * depositPct) / 100;
-    setDepositAmount(deposit.toFixed(2));
-
-    // Calculate monthly payment for installment
-    if (paymentTerms === "INSTALLMENT") {
-      const months = parseFloat(installmentMonths) || 12;
-      const remaining = total - deposit;
-      const monthly = remaining / months;
-      setMonthlyPayment(monthly.toFixed(2));
+    // Calculate deposit based on payment method
+    if (paymentMethod === "DEPOSIT") {
+      const depositPct = parseFloat(depositPercentage) || 30;
+      const deposit = (total * depositPct) / 100;
+      setDepositAmount(deposit.toFixed(2));
+    } else {
+      setDepositAmount(total.toFixed(2)); // Full payment
     }
   };
 
-  // Recalculate when items change
+  // Recalculate when items or payment method change
   useEffect(() => {
     calculateTotals(items);
-  }, [items, depositPercentage, installmentMonths, paymentTerms]);
+  }, [items, depositPercentage, paymentMethod]);
 
   // Add item
   const handleAddItem = () => {
@@ -253,21 +299,29 @@ export default function ContractFormPage() {
     setItems(newItems);
   };
 
-  // Update item
+  // Update item - Enhanced with vehicle details
   const handleUpdateItem = (index: number, field: keyof ContractItem, value: any) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
 
-    // Auto-fill price when variant selected
+    // Auto-fill vehicle details when variant selected
     if (field === "variant_id") {
       const selectedVariant = vehicles
         .flatMap((v) => v.variants || [])
         .find((variant) => variant.variant_id === Number(value));
       
       if (selectedVariant) {
+        const vehicle: any = vehicles.find((v) => 
+          v.variants?.some((variant) => variant.variant_id === Number(value))
+        );
+        
         newItems[index].unit_price = selectedVariant.retail_price.toString();
         newItems[index].version = selectedVariant.version;
         newItems[index].color = selectedVariant.color;
+        newItems[index].batteryCapacity = vehicle?.batteryCapacity || "N/A";
+        newItems[index].range = vehicle?.range || "N/A";
+        newItems[index].motor = vehicle?.motor || "N/A";
+        newItems[index].chargingTime = vehicle?.chargingTime || "N/A";
       }
     }
 
@@ -357,7 +411,7 @@ export default function ContractFormPage() {
         subtotal,
         tax_amount: taxAmount,
         total_amount: totalAmount,
-        payment_terms: paymentTerms,
+        payment_terms: paymentMethod as any,
         deposit_amount: depositAmount,
         delivery_deadline: deliveryDeadline,
         delivery_address: deliveryAddress,
@@ -407,7 +461,7 @@ export default function ContractFormPage() {
           subtotal,
           tax_amount: taxAmount,
           total_amount: totalAmount,
-          payment_terms: paymentTerms,
+          payment_terms: paymentMethod as any,
           deposit_amount: depositAmount,
           delivery_deadline: deliveryDeadline,
           delivery_address: deliveryAddress,
@@ -518,12 +572,12 @@ export default function ContractFormPage() {
           <TabsTrigger value="files">File & Ghi chú</TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: Basic Info */}
+        {/* Tab 1: Basic Info - Enhanced */}
         <TabsContent value="basic" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Thông tin khách hàng</CardTitle>
-              <CardDescription>Chọn khách hàng cho hợp đồng</CardDescription>
+              <CardDescription>Thông tin chi tiết khách hàng và CCCD</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -554,24 +608,46 @@ export default function ContractFormPage() {
               </div>
 
               {customerId && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm font-medium">Thông tin khách hàng:</p>
+                <div className="p-4 bg-muted rounded-lg space-y-3">
+                  <p className="text-sm font-semibold">Thông tin khách hàng:</p>
                   {customers
                     .filter((c: any) => c.customer_id === customerId)
                     .map((customer: any) => (
-                      <div key={customer.customer_id} className="mt-2 text-sm space-y-1">
-                        <p>
-                          <span className="text-muted-foreground">Tên:</span> {customer.name}
-                        </p>
-                        <p>
-                          <span className="text-muted-foreground">SĐT:</span> {customer.phone}
-                        </p>
-                        <p>
-                          <span className="text-muted-foreground">Email:</span> {customer.email || "N/A"}
-                        </p>
-                        <p>
-                          <span className="text-muted-foreground">Địa chỉ:</span> {customer.address || "N/A"}
-                        </p>
+                      <div key={customer.customer_id} className="space-y-2">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Họ tên:</span>
+                            <p className="font-medium">{customer.name}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Số điện thoại:</span>
+                            <p className="font-medium">{customer.phone}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Email:</span>
+                            <p className="font-medium">{customer.email || "N/A"}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Ngày sinh:</span>
+                            <p className="font-medium">{customer.dateOfBirth || "N/A"}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">CCCD/CMND:</span>
+                            <p className="font-medium">{customer.idNumber || "N/A"}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Ngày cấp:</span>
+                            <p className="font-medium">{customer.idIssueDate || "N/A"}</p>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground">Nơi cấp:</span>
+                            <p className="font-medium">{customer.idIssuePlace || "N/A"}</p>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground">Địa chỉ:</span>
+                            <p className="font-medium">{customer.address || "N/A"}</p>
+                          </div>
+                        </div>
                       </div>
                     ))}
                 </div>
@@ -581,8 +657,8 @@ export default function ContractFormPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Sản phẩm</CardTitle>
-              <CardDescription>Danh sách xe trong hợp đồng</CardDescription>
+              <CardTitle>Thông tin xe</CardTitle>
+              <CardDescription>Danh sách xe và thông số kỹ thuật</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {errors.items && (
@@ -592,7 +668,7 @@ export default function ContractFormPage() {
               {items.map((item, index) => (
                 <div key={index} className="p-4 border rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Sản phẩm #{index + 1}</h4>
+                    <h4 className="font-medium">Xe #{index + 1}</h4>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -651,7 +727,36 @@ export default function ContractFormPage() {
                         <p className="text-sm text-red-500">{errors[`item_${index}_quantity`]}</p>
                       )}
                     </div>
+                  </div>
 
+                  {/* Display vehicle details */}
+                  {item.variant_id > 0 && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm font-semibold text-blue-900 mb-2">Thông số kỹ thuật:</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm text-blue-800">
+                        <div>
+                          <span className="font-medium">Phiên bản:</span> {item.version || "N/A"}
+                        </div>
+                        <div>
+                          <span className="font-medium">Màu sắc:</span> {item.color || "N/A"}
+                        </div>
+                        <div>
+                          <span className="font-medium">Dung lượng pin:</span> {item.batteryCapacity || "N/A"}
+                        </div>
+                        <div>
+                          <span className="font-medium">Quãng đường:</span> {item.range || "N/A"}
+                        </div>
+                        <div>
+                          <span className="font-medium">Động cơ:</span> {item.motor || "N/A"}
+                        </div>
+                        <div>
+                          <span className="font-medium">Thời gian sạc:</span> {item.chargingTime || "N/A"}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Đơn giá</Label>
                       <Input
@@ -661,6 +766,9 @@ export default function ContractFormPage() {
                           handleUpdateItem(index, "unit_price", e.target.value)
                         }
                       />
+                      <p className="text-xs text-muted-foreground">
+                        {formatCurrency(item.unit_price)}
+                      </p>
                     </div>
 
                     <div className="space-y-2">
@@ -672,10 +780,13 @@ export default function ContractFormPage() {
                           handleUpdateItem(index, "discount_amount", e.target.value)
                         }
                       />
+                      <p className="text-xs text-muted-foreground">
+                        {formatCurrency(item.discount_amount)}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm font-semibold">
                     Thành tiền: {formatCurrency(
                       ((parseFloat(item.unit_price) - parseFloat(item.discount_amount)) * item.quantity).toString()
                     )}
@@ -714,103 +825,73 @@ export default function ContractFormPage() {
           </Card>
         </TabsContent>
 
-        {/* Tab 2: Payment Terms */}
+        {/* Tab 2: Payment Terms - Updated */}
         <TabsContent value="payment" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Điều khoản thanh toán</CardTitle>
-              <CardDescription>Phương thức và kế hoạch thanh toán</CardDescription>
+              <CardTitle>Phương thức thanh toán</CardTitle>
+              <CardDescription>Chọn hình thức thanh toán</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="paymentTerms">Phương thức thanh toán</Label>
+                <Label htmlFor="paymentMethod">Hình thức thanh toán</Label>
                 <Select
-                  value={paymentTerms}
-                  onValueChange={(value) => setPaymentTerms(value as PaymentTerms)}
+                  value={paymentMethod}
+                  onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
                 >
-                  <SelectTrigger id="paymentTerms">
+                  <SelectTrigger id="paymentMethod">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CASH">Tiền mặt</SelectItem>
-                    <SelectItem value="BANK_TRANSFER">Chuyển khoản</SelectItem>
-                    <SelectItem value="INSTALLMENT">Trả góp</SelectItem>
+                    <SelectItem value="FULL_PAYMENT">Thanh toán toàn bộ</SelectItem>
+                    <SelectItem value="DEPOSIT">Đặt cọc trước</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="depositPercentage">Tỷ lệ đặt cọc (%)</Label>
-                  <Input
-                    id="depositPercentage"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={depositPercentage}
-                    onChange={(e) => setDepositPercentage(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="depositAmount">Số tiền đặt cọc</Label>
-                  <Input
-                    id="depositAmount"
-                    type="number"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    {formatCurrency(depositAmount)}
-                  </p>
-                </div>
-              </div>
-
-              {paymentTerms === "INSTALLMENT" && (
-                <>
-                  <Separator />
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Thông tin trả góp</h4>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="installmentMonths">Số tháng trả góp</Label>
-                        <Select
-                          value={installmentMonths}
-                          onValueChange={setInstallmentMonths}
-                        >
-                          <SelectTrigger id="installmentMonths">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="6">6 tháng</SelectItem>
-                            <SelectItem value="12">12 tháng</SelectItem>
-                            <SelectItem value="24">24 tháng</SelectItem>
-                            <SelectItem value="36">36 tháng</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Số tiền trả hàng tháng</Label>
-                        <Input
-                          value={monthlyPayment}
-                          disabled
-                          className="bg-muted"
-                        />
-                        <p className="text-sm text-muted-foreground">
-                          {formatCurrency(monthlyPayment)}
-                        </p>
-                      </div>
+              {paymentMethod === "DEPOSIT" && (
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="depositPercentage">Tỷ lệ đặt cọc (%)</Label>
+                      <Select
+                        value={depositPercentage}
+                        onValueChange={setDepositPercentage}
+                      >
+                        <SelectTrigger id="depositPercentage">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10%</SelectItem>
+                          <SelectItem value="20">20%</SelectItem>
+                          <SelectItem value="30">30%</SelectItem>
+                          <SelectItem value="50">50%</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-900">
-                        <strong>Lưu ý:</strong> Số tiền trả góp hàng tháng được tính dựa trên tổng tiền còn lại sau khi trừ đặt cọc, chưa bao gồm lãi suất ngân hàng.
+                    <div className="space-y-2">
+                      <Label htmlFor="depositAmount">Số tiền đặt cọc</Label>
+                      <Input
+                        id="depositAmount"
+                        type="number"
+                        value={depositAmount}
+                        disabled
+                        className="bg-muted"
+                      />
+                      <p className="text-sm font-semibold text-primary">
+                        {formatCurrency(depositAmount)}
                       </p>
                     </div>
                   </div>
-                </>
+
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-900">
+                      <strong>Lưu ý:</strong> Số tiền còn lại phải được thanh toán đầy đủ trước khi nhận xe. 
+                      Tiền đặt cọc không được hoàn lại nếu khách hàng hủy đơn hàng.
+                    </p>
+                  </div>
+                </div>
               )}
 
               <Separator />
@@ -820,16 +901,28 @@ export default function ContractFormPage() {
                   <span>Tổng giá trị hợp đồng:</span>
                   <span className="text-primary">{formatCurrency(totalAmount)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Đặt cọc ({depositPercentage}%):</span>
-                  <span className="font-medium">{formatCurrency(depositAmount)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Còn lại:</span>
-                  <span className="font-medium">
-                    {formatCurrency((parseFloat(totalAmount) - parseFloat(depositAmount)).toString())}
-                  </span>
-                </div>
+                
+                {paymentMethod === "DEPOSIT" && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Đặt cọc ({depositPercentage}%):</span>
+                      <span className="font-medium text-green-600">{formatCurrency(depositAmount)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Còn lại:</span>
+                      <span className="font-medium text-orange-600">
+                        {formatCurrency((parseFloat(totalAmount) - parseFloat(depositAmount)).toString())}
+                      </span>
+                    </div>
+                  </>
+                )}
+                
+                {paymentMethod === "FULL_PAYMENT" && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Thanh toán ngay:</span>
+                    <span className="font-medium text-green-600">{formatCurrency(totalAmount)}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

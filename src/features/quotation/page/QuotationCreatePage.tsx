@@ -358,7 +358,7 @@ export default function QuotationCreatePage() {
     const id = Number.parseInt(customerId);
     setSelectedCustomerId(id);
 
-    const customer = customers.find((c) => c.customer_id === id);
+    const customer = customers.find((c) => Number(c.customer_id) === id);
     if (customer) {
       setCustomerName(customer.full_name);
       setCustomerPhone(customer.phone || "");
