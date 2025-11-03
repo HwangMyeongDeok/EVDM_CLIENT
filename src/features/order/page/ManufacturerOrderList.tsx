@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; // 👈 ĐÃ THÊM
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -10,7 +11,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Check, X, Clock, RefreshCw } from "lucide-react";
+import {
+  Loader2,
+  Check,
+  X,
+  Clock,
+  RefreshCw,
+  Eye, 
+} from "lucide-react";
 
 import {
   useGetDealerRequestsQuery,
@@ -51,11 +59,13 @@ const getStatusBadge = (status: DealerVehicleRequest["status"]) => {
 };
 
 export default function ManufacturerDealerRequestList() {
+  const navigate = useNavigate(); // 👈 ĐÃ THÊM
+
   const {
     data: dealerRequests = [],
     isLoading,
     isFetching,
-    refetch, // 💡 Lấy hàm refetch từ hook
+    refetch,
   } = useGetDealerRequestsQuery();
 
   const { data: vehicles = [] } = useGetVehiclesQuery();
@@ -91,7 +101,6 @@ export default function ManufacturerDealerRequestList() {
         } yêu cầu thành công!`
       );
 
-      // 💡 Làm mới danh sách sau khi duyệt hoặc từ chối
       await refetch();
     } catch (err) {
       console.error(err);
@@ -116,7 +125,7 @@ export default function ManufacturerDealerRequestList() {
       <Card className="shadow-lg border-gray-200">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-2xl font-bold">
-            📦 Danh sách yêu cầu từ đại lý
+             Danh sách yêu cầu từ đại lý
           </CardTitle>
           {isFetching && (
             <div className="text-gray-500 flex items-center">
@@ -161,6 +170,9 @@ export default function ManufacturerDealerRequestList() {
                   <TableHead className="font-bold text-gray-700">
                     Trạng thái
                   </TableHead>
+                  <TableHead className="font-bold text-gray-700">
+                    Chi tiết
+                  </TableHead> 
                   <TableHead className="text-center font-bold text-gray-700">
                     Hành động
                   </TableHead>
@@ -195,6 +207,22 @@ export default function ManufacturerDealerRequestList() {
                         )}
                       </TableCell>
                       <TableCell>{getStatusBadge(req.status)}</TableCell>
+
+                      {/* 👇 ĐÃ THÊM NÚT XEM CHI TIẾT VÀO ĐÂY */}
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            navigate(
+                              `/evm/staff/orders/${req.request_id}`
+                            )
+                          }
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+
                       <TableCell className="text-center space-x-2">
                         <Button
                           size="sm"

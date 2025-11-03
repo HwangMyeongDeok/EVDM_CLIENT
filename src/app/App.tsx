@@ -16,8 +16,8 @@ import ManufacturerOrderDetail from "@/features/order/page/ManufacturerOrderDeta
 import ContractListPage from "@/features/contract/page/ContractListPage";
 import ContractFormPage from "@/features/contract/page/ContractFormPage";
 import RequireAuth from "@/features/auth/guards/RequireAuth";
-
 import VehicleDetailPage from "@/features/vehicles/page/VehicleDetail";
+import PaymentTestPage from "@/features/payments/page/ContractPaymentPage";
 import OrderRequestList from "@/features/order/page/OrderRequestList";
 import DealerRequestDetail from "@/features/order/page/DealerRequestDetail";
 
@@ -57,6 +57,9 @@ export default function App() {
           <Route path="/dealer/staff/quotations/new" element={<QuotationCreatePage />} />        
           <Route path="/dealer/staff/quotations/create/:variantId" element={<QuotationCreatePage />} />
           <Route path="/dealer/staff/quotations/edit/:id" element={<QuotationCreatePage />} />
+
+        <Route path="/dealer/staff/payment-test/:contractId?" element={<PaymentTestPage />} />
+
         </Route>
         </Route>
 

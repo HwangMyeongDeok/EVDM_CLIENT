@@ -32,7 +32,7 @@ export default function ManufacturerDealerRequestDetail() {
   useEffect(() => {
     if (isSuccess) {
       alert("✅ Cập nhật trạng thái thành công!");
-      navigate("/manufacturer/dealer-requests");
+      navigate("/evm/staff/orders");
     }
   }, [isSuccess]);
 
