@@ -1,151 +1,104 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom"; 
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import instance from "@/lib/axios";
+import { toast } from "sonner";
 
-export type PaymentMethod = "BANK_TRANSFER" | "CASH" | "CREDIT_CARD";
-
-export default function PaymentTestPage() {
-  const { contractId: paramId } = useParams<{ contractId: string }>();
-  const contractId = paramId ?? "1"; // fallback fake id
-  const [amount, setAmount] = useState<number>(1000000);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CREDIT_CARD");
-  const [submitting, setSubmitting] = useState<boolean>(false);
-  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
-
+export default function ContractPaymentPage() {
+  const { contractId } = useParams<{ contractId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [amount, setAmount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchContract = async () => {
+      try {
+        const res = await instance.get(`/contracts/${contractId}`);
+        const remaining = res.data?.remaining_amount || 0;
+        setAmount(remaining);
+      } catch {
+        toast.error("Lỗi tải hợp đồng");
+      }
+    };
+    fetchContract();
+  }, [contractId]);
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const status = queryParams.get("status");
+    const responseCode = queryParams.get("responseCode");
+    const txnRef = queryParams.get("txnRef");
+
+    if (status) {
+      if (status === "success" && responseCode === "00") {
+        setPaymentStatus(`Thanh toán thành công cho giao dịch ${txnRef}`);
+        toast.success("Thanh toán thành công!");
+        setAmount(0);
+        setTimeout(() => navigate("/contracts"), 3000);
+      } else {
+        setPaymentStatus("Thanh toán thất bại. Vui lòng thử lại.");
+        toast.error("Thanh toán thất bại");
+      }
+    }
+  }, [location.search, navigate]);
 
   const handlePayment = async () => {
-    if (amount <= 0) {
-      toast.error("Số tiền phải lớn hơn 0");
-      return;
-    }
-
+    if (amount <= 0) return toast.error("Số tiền không hợp lệ.");
+    setLoading(true);
     try {
-      setSubmitting(true);
-
-      // Gọi backend tạo payment
       const res = await instance.post("/payments/create", {
-        contract_id: contractId,
+        contract_id: Number(contractId),
         amount,
-        payment_method: paymentMethod,
-        payment_context: "CUSTOMER",
+        payment_method: "CREDIT_CARD",
       });
 
-      toast.success("Payment created!");
-
-      // Lấy paymentUrl từ backend
       const paymentUrl = res.data?.data?.paymentUrl;
-
-      // Nếu là CREDIT_CARD, redirect trình duyệt
-      if (paymentMethod === "CREDIT_CARD" && paymentUrl) {
-        window.location.href = paymentUrl; // **chuẩn, không bị CORS**
-      }
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Thanh toán thất bại");
+      if (paymentUrl) window.location.href = paymentUrl;
+    } catch {
+      toast.error("Thanh toán thất bại");
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  // Xử lý return từ VNPAY
-  useEffect(() => {
-    const query = new URLSearchParams(location.search);
-    const responseCode = query.get("vnp_ResponseCode");
-    const txnRef = query.get("vnp_TxnRef");
-
-    if (responseCode) {
-      if (responseCode === "00") {
-        setPaymentStatus(`Thanh toán thành công cho hợp đồng ${txnRef}`);
-        toast.success(`Thanh toán VNPAY thành công cho hợp đồng ${txnRef}`);
-        // navigate(`/dealer/staff/payments/${contractId}`); // tuỳ chọn
-      } else {
-        setPaymentStatus("Thanh toán VNPAY thất bại. Vui lòng thử lại.");
-        toast.error("Thanh toán VNPAY thất bại!");
-      }
-    }
-  }, [location.search, contractId]);
-
   return (
-    <div className="p-6 max-w-md mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle>Test Payment Page</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {paymentStatus && (
-            <div className="p-4 bg-gray-100 rounded mb-4">
-              <p
-                className={
-                  paymentStatus.includes("thành công")
-                    ? "text-green-600"
-                    : "text-red-600"
-                }
-              >
-                {paymentStatus}
-              </p>
-              <Button
-                onClick={() => setPaymentStatus(null)}
-                className="mt-2 w-full bg-gray-500 hover:bg-gray-600 text-white"
-              >
-                Đóng
-              </Button>
-            </div>
-          )}
-
-          <div>
-            <Label>Số tiền</Label>
-            <Input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-            />
-          </div>
-
-          <div>
-            <Label>Phương thức</Label>
-            <Select
-              value={paymentMethod}
-              onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}
+    <Card className="max-w-2xl mx-auto mt-8">
+      <CardHeader>
+        <CardTitle>Thanh toán hợp đồng #{contractId}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {paymentStatus && (
+          <div className="mb-4 p-4 bg-gray-100 rounded">
+            <p className={paymentStatus.includes("thành công") ? "text-green-600" : "text-red-600"}>
+              {paymentStatus}
+            </p>
+            <Button
+              onClick={() => setPaymentStatus(null)}
+              className="mt-2 w-full bg-gray-500 hover:bg-gray-600 text-white"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn phương thức" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="BANK_TRANSFER">Chuyển khoản</SelectItem>
-                <SelectItem value="CASH">Tiền mặt</SelectItem>
-                <SelectItem value="CREDIT_CARD">Thẻ tín dụng</SelectItem>
-              </SelectContent>
-            </Select>
+              Đóng
+            </Button>
           </div>
-
-          <Button
-            onClick={handlePayment}
-            disabled={submitting}
-            className="w-full mt-4"
-          >
-            {submitting ? "Đang xử lý..." : "Thanh toán"}
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+        <div className="mb-4">
+          <Label>Số tiền thanh toán</Label>
+          <Input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(Number(e.target.value))}
+            min={1} 
+            disabled={loading} 
+          />
+        </div>
+        <Button onClick={handlePayment} disabled={loading || amount <= 0}>
+          {loading ? "Đang xử lý..." : "Thanh toán VNPAY"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
