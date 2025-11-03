@@ -59,7 +59,6 @@ export default function QuotationListPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quotationToDelete, setQuotationToDelete] = useState<number | null>(null);
   
-  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
@@ -87,7 +86,6 @@ export default function QuotationListPage() {
   const filterQuotations = () => {
     let filtered = [...quotations];
 
-    // Filter by search term (search in quotation number, customer name)
     if (searchTerm) {
       filtered = filtered.filter((q) => {
         const searchLower = searchTerm.toLowerCase();
@@ -98,7 +96,6 @@ export default function QuotationListPage() {
       });
     }
 
-    // Filter by status
     if (statusFilter !== "ALL") {
       filtered = filtered.filter((q) => q.status === statusFilter);
     }
@@ -148,13 +145,12 @@ export default function QuotationListPage() {
     });
   };
 
-  // Get vehicle names from quotation items
   const getVehicleNames = (quotation: QuotationResponse) => {
     if (!quotation.items || quotation.items.length === 0) return "N/A";
     
     const vehicleNames = quotation.items
       .map((item) => item.variant?.version || "N/A")
-      .filter((name, index, self) => self.indexOf(name) === index) // unique
+      .filter((name, index, self) => self.indexOf(name) === index)
       .join(", ");
     
     return vehicleNames || "N/A";
@@ -162,7 +158,6 @@ export default function QuotationListPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Danh sách Báo giá</h1>
