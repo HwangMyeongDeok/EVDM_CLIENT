@@ -362,7 +362,6 @@ export default function PurchaseRequestForm() {
                       <TableCell className="text-right text-xl font-extrabold text-blue-600">
                         {formatPrice(total)}
                       </TableCell>
-                      <TableCell></TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // 👈 ĐÃ THÊM
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -11,18 +11,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Loader2,
-  Check,
-  X,
   Clock,
   RefreshCw,
-  Eye, 
+  Eye,
+  Check,
+  X,
 } from "lucide-react";
 
 import {
   useGetDealerRequestsQuery,
-  useUpdateDealerRequestStatusMutation,
 } from "@/features/order/api";
 import { useGetVehiclesQuery } from "@/features/vehicles/api";
 import type { DealerVehicleRequest } from "@/types/dealer_vehicle_request";
@@ -59,7 +66,7 @@ const getStatusBadge = (status: DealerVehicleRequest["status"]) => {
 };
 
 export default function ManufacturerDealerRequestList() {
-  const navigate = useNavigate(); // 👈 ĐÃ THÊM
+  const navigate = useNavigate();
 
   const {
     data: dealerRequests = [],
@@ -69,10 +76,6 @@ export default function ManufacturerDealerRequestList() {
   } = useGetDealerRequestsQuery();
 
   const { data: vehicles = [] } = useGetVehiclesQuery();
-  const [updateDealerRequestStatus, { isLoading: isUpdating }] =
-    useUpdateDealerRequestStatusMutation();
-
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   // Map variant_id -> variant object (để truy xuất nhanh)
   const variantMap = new Map<number, IVehicleVariant>();
@@ -82,33 +85,25 @@ export default function ManufacturerDealerRequestList() {
     )
   );
 
-  // --- Hàm cập nhật trạng thái ---
-  const handleUpdateStatus = async (
-    id: string,
-    status: "APPROVED" | "REJECTED"
-  ) => {
-    const confirmText =
-      status === "APPROVED" ? "Duyệt yêu cầu này?" : "Từ chối yêu cầu này?";
-    if (!confirm(confirmText)) return;
+  // State cho tìm kiếm và lọc
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
-    try {
-      setUpdatingId(id);
-      await updateDealerRequestStatus({ id, status }).unwrap();
+  // Lọc danh sách dựa trên tìm kiếm và bộ lọc
+  const filteredRequests = dealerRequests.filter((req) => {
+    const variant = variantMap.get(req.variant_id);
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch =
+      String(req.request_id).toLowerCase().includes(searchLower) ||
+      String(req.dealer_id).toLowerCase().includes(searchLower) ||
+      (variant?.version || "").toLowerCase().includes(searchLower) ||
+      (variant?.color || "").toLowerCase().includes(searchLower);
 
-      alert(
-        `✅ Đã ${
-          status === "APPROVED" ? "duyệt" : "từ chối"
-        } yêu cầu thành công!`
-      );
+    const matchesStatus =
+      statusFilter === "ALL" || req.status === statusFilter;
 
-      await refetch();
-    } catch (err) {
-      console.error(err);
-      alert("❌ Có lỗi xảy ra khi cập nhật trạng thái!");
-    } finally {
-      setUpdatingId(null);
-    }
-  };
+    return matchesSearch && matchesStatus;
+  });
 
   if (isLoading)
     return (
@@ -125,24 +120,57 @@ export default function ManufacturerDealerRequestList() {
       <Card className="shadow-lg border-gray-200">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-2xl font-bold">
-             Danh sách yêu cầu từ đại lý
+            Danh sách yêu cầu từ đại lý
           </CardTitle>
-          {isFetching && (
-            <div className="text-gray-500 flex items-center">
-              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-              Đang cập nhật...
-            </div>
-          )}
+          <div className="flex items-center space-x-4">
+            {isFetching && (
+              <div className="text-gray-500 flex items-center">
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                Đang cập nhật...
+              </div>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Làm mới
+            </Button>
+          </div>
         </CardHeader>
 
         <CardContent>
-          {dealerRequests.length === 0 ? (
+          {/* Thanh tìm kiếm và bộ lọc */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <Input
+                placeholder="Tìm kiếm theo mã yêu cầu, đại lý, phiên bản, màu xe..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Lọc theo trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Tất cả</SelectItem>
+                <SelectItem value="PENDING">Đang chờ</SelectItem>
+                <SelectItem value="APPROVED">Đã duyệt</SelectItem>
+                <SelectItem value="REJECTED">Đã từ chối</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {filteredRequests.length === 0 ? (
             <div className="text-center py-10 bg-gray-50 rounded-lg">
               <p className="text-lg font-medium text-gray-500">
-                🎉 Không có yêu cầu nào.
+                🎉 Không có yêu cầu nào phù hợp.
               </p>
               <p className="text-sm text-gray-400 mt-1">
-                Các yêu cầu mới sẽ hiển thị tại đây.
+                Thay đổi bộ lọc hoặc tìm kiếm để xem thêm.
               </p>
             </div>
           ) : (
@@ -172,25 +200,18 @@ export default function ManufacturerDealerRequestList() {
                   </TableHead>
                   <TableHead className="font-bold text-gray-700">
                     Chi tiết
-                  </TableHead> 
-                  <TableHead className="text-center font-bold text-gray-700">
-                    Hành động
                   </TableHead>
                 </TableRow>
               </TableHeader>
 
               <TableBody className="divide-y divide-gray-200">
-                {dealerRequests.map((req: DealerVehicleRequest) => {
+                {filteredRequests.map((req: DealerVehicleRequest) => {
                   const variant = variantMap.get(req.variant_id);
-                  const isCurrentUpdating =
-                    isUpdating && updatingId === req.request_id;
 
                   return (
                     <TableRow
                       key={req.request_id}
-                      className={`hover:bg-gray-50 ${
-                        isCurrentUpdating ? "opacity-50" : ""
-                      }`}
+                      className={`hover:bg-gray-50`}
                     >
                       <TableCell className="font-medium text-gray-900">
                         {req.request_id}
@@ -208,7 +229,6 @@ export default function ManufacturerDealerRequestList() {
                       </TableCell>
                       <TableCell>{getStatusBadge(req.status)}</TableCell>
 
-                      {/* 👇 ĐÃ THÊM NÚT XEM CHI TIẾT VÀO ĐÂY */}
                       <TableCell>
                         <Button
                           variant="outline"
@@ -220,40 +240,6 @@ export default function ManufacturerDealerRequestList() {
                           }
                         >
                           <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-
-                      <TableCell className="text-center space-x-2">
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
-                          disabled={isUpdating || req.status !== "PENDING"}
-                          onClick={() =>
-                            handleUpdateStatus(req.request_id, "APPROVED")
-                          }
-                        >
-                          {isCurrentUpdating ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                          ) : (
-                            <Check className="h-4 w-4 mr-1" />
-                          )}
-                          Duyệt
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="disabled:bg-gray-300"
-                          disabled={isUpdating || req.status !== "PENDING"}
-                          onClick={() =>
-                            handleUpdateStatus(req.request_id, "REJECTED")
-                          }
-                        >
-                          {isCurrentUpdating ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                          ) : (
-                            <X className="h-4 w-4 mr-1" />
-                          )}
-                          Từ chối
                         </Button>
                       </TableCell>
                     </TableRow>

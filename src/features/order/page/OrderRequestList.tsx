@@ -24,7 +24,6 @@ import {
 import {
   Loader2,
   PlusCircle,
-  Eye,
   RefreshCw,
   AlertCircle,
   Clock,
@@ -35,6 +34,7 @@ import {
   PackageCheck,
   Truck,
   DollarSign,
+  SearchX,
 } from "lucide-react";
 import type { DealerVehicleRequest } from "@/types/dealer_vehicle_request";
 import type { RequestStatus } from "@/types/enums";
@@ -82,7 +82,7 @@ export default function DealerRequestList() {
 
   // --- Lấy dữ liệu ---
   const { data: flatRequests = [], isLoading, isFetching } = useGetDealerRequestsQuery();
-  const { data: vehicles = [] } = useGetVehiclesQuery(); // 💡 Thêm dòng này
+  const { data: vehicles = [] } = useGetVehiclesQuery();
 
   // --- Map variant_id → thông tin xe ---
   const variantMap = useMemo(() => {
@@ -131,14 +131,13 @@ export default function DealerRequestList() {
     return enrichedRequests
       .filter((req) => {
         if (statusFilter === "ALL") return true;
-        if (statusFilter === "PARTIAL") return req.status === "PARTIAL";
         return req.status === statusFilter;
       })
       .filter((req) => {
         if (!searchTerm) return true;
-        const code = (req as any).request_code ?? req.request_id ?? "";
-        const dealerName = (req as any).dealer?.name ?? req.dealer_id ?? "";
-        const variantName = req.variant?.model_name ?? "";
+        const code = String((req as any).request_code ?? req.request_id ?? "");
+        const dealerName = String((req as any).dealer?.name ?? req.dealer_id ?? "");
+        const variantName = String(req.variant?.model_name ?? "");
         const term = searchTerm.toLowerCase();
         return (
           code.toLowerCase().includes(term) ||
@@ -147,9 +146,11 @@ export default function DealerRequestList() {
         );
       })
       .sort(
-        (a, b) =>
-          new Date((b as any).created_at ?? 0).getTime() -
-          new Date((a as any).created_at ?? 0).getTime()
+        (a, b) => {
+          const aCode = (a as any).request_code ?? a.request_id ?? 0;
+          const bCode = (b as any).request_code ?? b.request_id ?? 0;
+          return aCode - bCode; // Sắp xếp từ thấp đến cao (ascending)
+        }
       );
   }, [enrichedRequests, searchTerm, statusFilter]);
 
@@ -167,12 +168,12 @@ export default function DealerRequestList() {
 
   // --- Render ---
   return (
-    <div className="p-6 md:p-8 lg:p-10">
+    <div className="p-6 md:p-8 lg:p-10 bg-gray-50 min-h-screen"> {/* Thêm bg để thoáng */}
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Quản Lý Đơn Hàng Đặt Xe</h1>
-          <p className="text-gray-500">Quản lý đơn hàng đại lý đặt lên hãng</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Quản Lý Đơn Hàng Đặt Xe</h1>
+          <p className="text-gray-500 mt-1">Quản lý đơn hàng đại lý đặt lên hãng</p>
         </div>
         <Button
           className="bg-blue-600 hover:bg-blue-700 mt-4 md:mt-0"
@@ -183,151 +184,146 @@ export default function DealerRequestList() {
       </div>
 
       {/* Filter */}
-      <div className="flex items-center space-x-4 mb-6">
+      <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 mb-8">
         <div className="relative w-full md:w-1/3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Tìm kiếm theo mã đơn, đại lý, mẫu xe..."
-            className="pl-9"
+            className="pl-9 border-gray-300"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-auto md:w-[200px]">
+          <SelectTrigger className="w-full md:w-[200px] border-gray-300">
             <SelectValue placeholder="Tất Cả Trạng Thái" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">Tất Cả Trạng Thái</SelectItem>
             <SelectItem value="PENDING">Chờ Duyệt</SelectItem>
             <SelectItem value="APPROVED">Đã Duyệt</SelectItem>
+            <SelectItem value="PARTIAL">Đang Giao Hàng</SelectItem>
             <SelectItem value="REJECTED">Từ Chối</SelectItem>
           </SelectContent>
         </Select>
         {isFetching && (
-          <div className="text-gray-500 flex items-center">
+          <div className="text-gray-500 flex items-center mt-4 md:mt-0 md:ml-4">
             <RefreshCw className="h-4 w-4 animate-spin mr-2" /> Đang làm mới...
           </div>
         )}
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <Card className="shadow-md border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Chờ Duyệt</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">Chờ Duyệt</CardTitle>
             <Box className="h-5 w-5 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summaryStats.pendingCount}</div>
+            <div className="text-2xl font-bold text-gray-900">{summaryStats.pendingCount}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-md border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Đã Duyệt</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">Đã Duyệt</CardTitle>
             <PackageCheck className="h-5 w-5 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summaryStats.approvedCount}</div>
+            <div className="text-2xl font-bold text-gray-900">{summaryStats.approvedCount}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-md border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Đang Giao</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">Đang Giao</CardTitle>
             <Truck className="h-5 w-5 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summaryStats.shippingCount}</div>
+            <div className="text-2xl font-bold text-gray-900">{summaryStats.shippingCount}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-md border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tổng Giá Trị</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">Tổng Giá Trị</CardTitle>
             <DollarSign className="h-5 w-5 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatPrice(summaryStats.totalValue)}</div>
+            <div className="text-2xl font-bold text-gray-900">{formatPrice(summaryStats.totalValue)}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Table */}
-      <Card className="shadow-lg border-gray-200">
+      <Card className="shadow-lg border-gray-200 overflow-hidden">
         <CardContent className="p-0">
-          {filteredRequests.length === 0 ? (
-            <div className="text-center py-10 bg-gray-50 rounded-lg">
-              <p className="text-lg font-medium text-gray-500">Không tìm thấy đơn hàng nào.</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
-              </p>
-            </div>
-          ) : (
-            <Table className="min-w-full divide-y divide-gray-200">
-              <TableHeader className="bg-gray-50">
-                <TableRow>
-                  <TableHead className="font-bold text-gray-700">Mã Đơn</TableHead>
-                  <TableHead className="font-bold text-gray-700">Đại Lý</TableHead>
-                  <TableHead className="font-bold text-gray-700">Mẫu Xe</TableHead>
-                  <TableHead className="text-center font-bold text-gray-700">Số Lượng</TableHead>
-                  <TableHead className="text-right font-bold text-gray-700">Tổng Giá Trị</TableHead>
-                  <TableHead className="font-bold text-gray-700">Trạng Thái</TableHead>
-                  <TableHead className="text-center font-bold text-gray-700">Thao Tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-gray-200">
-                {filteredRequests.map((req) => {
-                  const price = req.variant?.retail_price ?? 0;
-                  const lineValue = price * (req.requested_quantity ?? 0);
-                  const reqCode = (req as any).request_code ?? req.request_id;
-                  const reqDate = (req as any).created_at ?? new Date();
+          <div className="overflow-x-auto"> {/* Thêm responsive */}
+            {filteredRequests.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg flex flex-col items-center">
+                <SearchX className="h-12 w-12 text-gray-400 mb-4" /> {/* Thêm icon */}
+                <p className="text-lg font-medium text-gray-500">Không tìm thấy đơn hàng nào.</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
+                </p>
+              </div>
+            ) : (
+              <Table className="min-w-full divide-y divide-gray-200">
+                <TableHeader className="bg-gray-50">
+                  <TableRow>
+                    <TableHead className="font-bold text-gray-700 px-6 py-3">Mã Đơn</TableHead>
+                    <TableHead className="font-bold text-gray-700 px-6 py-3">Đại Lý</TableHead>
+                    <TableHead className="font-bold text-gray-700 px-6 py-3">Mẫu Xe</TableHead>
+                    <TableHead className="font-bold text-gray-700 px-6 py-3">Ngày Tạo</TableHead>
+                    <TableHead className="font-bold text-gray-700 px-6 py-3">Giờ Tạo</TableHead>
+                    <TableHead className="text-center font-bold text-gray-700 px-6 py-3">Số Lượng</TableHead>
+                    <TableHead className="text-right font-bold text-gray-700 px-6 py-3">Tổng Giá Trị</TableHead>
+                    <TableHead className="font-bold text-gray-700 px-6 py-3">Trạng Thái</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-gray-200">
+                  {filteredRequests.map((req) => {
+                    const price = req.variant?.retail_price ?? 0;
+                    const lineValue = price * (req.requested_quantity ?? 0);
+                    const reqCode = (req as any).request_code ?? req.request_id;
+                    const reqDate = (req as any).created_at ?? new Date();
 
-                  return (
-                    <TableRow key={req.request_id} className="hover:bg-gray-50 transition-colors">
-                      <TableCell className="font-medium text-blue-600">
-                        {reqCode}
-                        <div className="text-xs text-gray-400 font-normal">
+                    return (
+                      <TableRow key={req.request_id} className="hover:bg-gray-50 transition-colors duration-200">
+                        <TableCell className="font-medium text-blue-600 px-6 py-4">
+                          {reqCode}
+                        </TableCell>
+                        <TableCell className="px-6 py-4">
+                          {(req as any).dealer?.name ?? req.dealer_id ?? "N/A"} {/* Ưu tiên tên nếu có */}
+                        </TableCell>
+
+                        <TableCell className="font-medium px-6 py-4">
+                          {req.variant?.model_name ?? "N/A"}
+                          <div className="text-xs text-gray-400">
+                            {req.variant?.version} – {req.variant?.color}
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-6 py-4 text-gray-600">
                           {new Date(reqDate).toLocaleDateString("vi-VN")}
-                        </div>
-                      </TableCell>
+                        </TableCell>
+                        <TableCell className="px-6 py-4 text-gray-600">
+                          {new Date(reqDate).toLocaleTimeString("vi-VN")}
+                        </TableCell>
 
-                      <TableCell>
-                        {req.dealer_id ?? "N/A"}
-                      </TableCell>
+                        <TableCell className="text-center px-6 py-4">
+                          {req.requested_quantity} xe
+                        </TableCell>
 
-                      <TableCell className="font-medium">
-                        {req.variant?.model_name ?? "N/A"}
-                        <div className="text-xs text-gray-400">
-                          {req.variant?.version} – {req.variant?.color}
-                        </div>
-                      </TableCell>
+                        <TableCell className="text-right font-semibold px-6 py-4">
+                          {formatPrice(lineValue)}
+                        </TableCell>
 
-                      <TableCell className="text-center">
-                        {req.requested_quantity} xe
-                      </TableCell>
-
-                      <TableCell className="text-right font-semibold">
-                        {formatPrice(lineValue)}
-                      </TableCell>
-
-                      <TableCell>{getStatusBadge(req.status)}</TableCell>
-
-                      <TableCell className="text-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            navigate(`/dealer/manager/purchase-orders/${reqCode}`)
-                          }
-                        >
-                          <Eye className="h-4 w-4 mr-1" /> Xem Chi Tiết
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
+                        <TableCell className="px-6 py-4">{getStatusBadge(req.status)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

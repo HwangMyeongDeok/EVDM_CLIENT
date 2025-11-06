@@ -19,7 +19,8 @@ import RequireAuth from "@/features/auth/guards/RequireAuth";
 import VehicleDetailPage from "@/features/vehicles/page/VehicleDetail";
 import PaymentTestPage from "@/features/payments/page/ContractPaymentPage";
 import OrderRequestList from "@/features/order/page/OrderRequestList";
-import DealerRequestDetail from "@/features/order/page/DealerRequestDetail";
+import PaymentStatusPage from "@/features/payments/page/PaymentStatusPage";
+
 
 export default function App() {
   return (
@@ -38,16 +39,16 @@ export default function App() {
             element={<DealerStaffDashboard />}
           />
 
-            <Route
-              path="/dealer/staff/PaymentFormPage"
-              element={<PaymentFormPage />}
-            />
-            <Route
-              path="/dealer/staff/PaymentHistoryPage"
-              element={<PaymentHistoryPage />}
-            />
+          <Route
+            path="/dealer/staff/PaymentFormPage"
+            element={<PaymentFormPage />}
+          />
+          <Route
+            path="/dealer/staff/PaymentHistoryPage"
+            element={<PaymentHistoryPage />}
+          />
 
-            
+
           <Route path="/dealer/staff/vehicles" element={<VehicleCatalog />} />
           <Route path="/dealer/staff/vehicles/:id" element={<VehicleDetailPage />} />
           <Route path="/dealer/staff/contracts" element={<ContractListPage />} />
@@ -58,7 +59,8 @@ export default function App() {
           <Route path="/dealer/staff/quotations/create/:variantId" element={<QuotationCreatePage />} />
           <Route path="/dealer/staff/quotations/edit/:id" element={<QuotationCreatePage />} />
 
-        <Route path="/dealer/staff/payment-test/:contractId?" element={<PaymentTestPage />} />
+          <Route path="/dealer/staff/payment-test/:contractId?" element={<PaymentTestPage />} />
+          <Route path="/dealer/staff/payment-status" element={<PaymentStatusPage />} />
 
         </Route>
         </Route>
@@ -68,7 +70,6 @@ export default function App() {
         <Route element={<DealerStaffLayout />}>
           <Route path="/dealer/manager/purchase-orders/new" element={<PurchaseOrderForm />} />
           <Route path="/dealer/manager/purchase-orders/list" element={<OrderRequestList />} />
-          <Route path="/dealer/manager/purchase-orders/:requestCode" element={<DealerRequestDetail />} /> 
       </Route>
       </Route>
 

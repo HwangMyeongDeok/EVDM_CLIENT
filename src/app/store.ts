@@ -16,7 +16,7 @@ export const store = configureStore({
     getDefaultMiddleware({ serializableCheck: false })
       .concat(vehicleApi.middleware)
       .concat(dealerRequestApi.middleware)
-      .concat(customerApi.middleware),
+      .concat(customerApi.middleware)
 });
 
 export type RootState = ReturnType<typeof store.getState>;
