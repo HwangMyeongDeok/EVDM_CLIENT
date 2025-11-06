@@ -154,6 +154,14 @@ export default function QuotationCreatePage() {
       setCustomers((s) => [created, ...s]);
       setSelectedCustomerId(String((created as any).customer_id));
       setIsNewCustomer(false);
+      setNewCustomer({
+        full_name: "",
+        phone: "",
+        email: "",
+        address: "",
+        paymentTerms: "",
+        notes: "",
+      });
       toast.success("Tạo khách hàng thành công");
     } catch (err) {
       console.error(err);
@@ -163,7 +171,6 @@ export default function QuotationCreatePage() {
     }
   };
 
-  // New function to apply promo code
   const handleApplyPromoCode = async () => {
     if (!promoCode.trim()) {
       return toast.error("Vui lòng nhập mã khuyến mãi");
@@ -544,7 +551,18 @@ export default function QuotationCreatePage() {
                         variant="outline"
                         type="button"
                         className="px-6"
-                        onClick={() => setIsNewCustomer(false)}
+                        onClick={() => {
+                          setIsNewCustomer(false);
+                          setSelectedCustomerId("");
+                          setNewCustomer({
+                            full_name: "",
+                            phone: "",
+                            email: "",
+                            address: "",
+                            paymentTerms: "",
+                            notes: "",
+                          });
+                        }}
                       >
                         <RotateCcw className="w-4 h-4 mr-2" />
                         Hủy
@@ -662,9 +680,9 @@ export default function QuotationCreatePage() {
         </CardContent>
       </Card>
 
-      
-      
-      
+
+
+
 
 
 
