@@ -1,108 +1,146 @@
-// Contract Types
-export type ContractStatus = 
-  | "DRAFT" 
-  | "PENDING_APPROVAL" 
-  | "APPROVED" 
-  | "REJECTED" 
-  | "SIGNED" 
-  | "COMPLETED" 
+// src/features/contract/types.ts
+// -------------------------------
+
+export type ContractStatus =
+  | "DRAFT"
+  | "PENDING_APPROVAL"
+  | "PENDING_SIGN"
+  | "SIGNED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
   | "CANCELLED";
 
-export type PaymentTerms = "CASH" | "INSTALLMENT" | "BANK_TRANSFER";
+export type PaymentStatus = "UNPAID" | "PARTIAL" | "PAID";
+export type PaymentPlan = "FULL" | "DEPOSIT";
 
-export interface ContractItem {
-  item_id: number;
-  contract_id: number;
-  variant_id: number;
-  quantity: number;
-  unit_price: string;
-  discount_amount: string;
-  line_total: string;
-  variant?: {
-    variant_id: number;
-    version: string;
-    color: string;
-    retail_price: string;
-  };
+// -------------------------------
+// 🔹 Vehicle
+// -------------------------------
+export interface Vehicle {
+  vehicle_id: number;
+  model_name: string;
+  specifications?: string;
+  body_type: string;
+  seats: number;
+  doors: number;
+  warranty_years: number;
+  description?: string;
+  image_urls?: string[];
 }
 
-export interface ContractResponse {
-  contract_id: number;
-  contract_number: string;
-  quotation_id?: number;
+// -------------------------------
+// 🔹 VehicleVariant
+// -------------------------------
+export interface VehicleVariant {
+  variant_id: number;
+  vehicle_id: number;
+  version?: string;
+  color?: string;
+  dealer_price: number;
+  base_price: number;
+  retail_price?: number;
+  discount_percent: number;
+  model_year: number;
+  battery_capacity_kwh?: number;
+  range_km?: number;
+  motor_power_kw?: number;
+  acceleration_0_100?: number;
+  top_speed_kmh?: number;
+  charging_time_hours?: number;
+  status: "ACTIVE" | "DISCONTINUED";
+  vehicle: Vehicle; // 🔗 quan hệ với Vehicle
+}
+
+// -------------------------------
+// 🔹 Customer
+// -------------------------------
+export interface Customer {
+  customer_id: number;
+  full_name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  dealer_id: number;
+}
+
+// -------------------------------
+// 🔹 Dealer
+// -------------------------------
+export interface Dealer {
+  dealer_id: number;
+  dealer_name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
+
+// -------------------------------
+// 🔹 User (nhân viên)
+export interface User {
+  user_id: number;
+  full_name: string;
+  email: string;
+  role: string;
+  dealer_id: number;
+}
+
+// -------------------------------
+// 🔹 Quotation
+// -------------------------------
+export type QuotationStatus = "DRAFT" | "SENT" | "APPROVED" | "REJECTED";
+
+export interface Quotation {
+  quotation_id: number;
+  quotation_number?: string;
   customer_id: number;
   dealer_id: number;
   user_id: number;
-  status: ContractStatus;
-  payment_terms: PaymentTerms;
-  deposit_amount: string;
-  subtotal: string;
-  tax_amount: string;
-  discount_total: string;
-  total_amount: string;
-  delivery_deadline?: string;
-  delivery_address?: string;
-  terms_and_conditions?: string;
+  variant_id: number;
+  status: QuotationStatus;
+  subtotal?: number;
+  tax_rate: number;
+  tax_amount?: number;
+  discount_total: number;
+  total_amount?: number;
   notes?: string;
   approved_by?: number;
-  approved_at?: string;
-  rejection_reason?: string;
-  signed_at?: string;
-  completed_at?: string;
   created_at: string;
   updated_at?: string;
-  customer?: {
-    customer_id: number;
-    full_name: string;
-    phone?: string;
-    email?: string;
-    id_number?: string;
-  };
-  user?: {
-    user_id: number;
-    full_name: string;
-    email: string;
-  };
-  approver?: {
-    user_id: number;
-    full_name: string;
-    email: string;
-  };
-  items: ContractItem[];
+
+  // 🔗 quan hệ
+  customer: Customer;
+  dealer: Dealer;
+  user: User;
+  variant: VehicleVariant;
 }
 
-export interface CreateContractDto {
+// -------------------------------
+// 🔹 Contract
+// -------------------------------
+export interface Contract {
+  contract_id: number;
+  contract_code: string;
   quotation_id?: number;
+  dealer_id: number;
   customer_id: number;
-  items: {
-    variant_id: number;
-    quantity: number;
-    unit_price: string;
-    discount_amount: string;
-  }[];
-  subtotal: string;
-  tax_amount: string;
-  total_amount: string;
-  payment_terms: PaymentTerms;
-  deposit_amount: string;
-  delivery_deadline?: string;
-  delivery_address?: string;
-  terms_and_conditions?: string;
-  notes?: string;
+  user_id: number;
+  approved_by?: number;
+  contract_date: string;
+  delivery_date?: string;
   status: ContractStatus;
-}
+  total_amount: number;
+  discount_amount: number;
+  final_amount: number;
+  payment_status: PaymentStatus;
+  payment_plan: PaymentPlan;
+  deposit_amount: number;
+  remaining_amount: number;
+  created_at: string;
+  updated_at?: string;
 
-export interface UpdateContractDto {
-  status?: ContractStatus;
-  paymentTerms?: PaymentTerms;
-  depositAmount?: number;
-  deliveryDeadline?: string;
-  termsConditions?: string;
-  notes?: string;
-  rejectionReason?: string;
-}
-
-export interface ApproveContractDto {
-  status: "APPROVED" | "REJECTED";
-  rejectionReason?: string;
+  // 🔗 quan hệ
+  dealer: Dealer;
+  customer: Customer;
+  user: User;
+  quotation?: Quotation;
 }
