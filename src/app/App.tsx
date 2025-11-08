@@ -20,6 +20,10 @@ import VehicleDetailPage from "@/features/vehicles/page/VehicleDetail";
 import PaymentTestPage from "@/features/payments/page/ContractPaymentPage";
 import OrderRequestList from "@/features/order/page/OrderRequestList";
 import PaymentStatusPage from "@/features/payments/page/PaymentStatusPage";
+import ManufacturerDeliveryCreate from "@/features/allocation/page/ManufacturerDeliveryCreate";
+import { DealerManagerLayout } from "@/features/dealer/manager/dealer-manager-layout";
+import EvmDashboard from "@/features/evm-staff/Dashboard";
+import { EvmLayout } from "@/features/evm-staff/evm-layout";
 
 
 export default function App() {
@@ -67,16 +71,19 @@ export default function App() {
 
 
       <Route element={<RequireAuth allowedRoles={["DEALER_MANAGER"]} />}>
-        <Route element={<DealerStaffLayout />}>
+        <Route element={<DealerManagerLayout />}>
+          <Route path="/dealer/manager/dashboard" element={<DealerStaffDashboard />} />
           <Route path="/dealer/manager/purchase-orders/new" element={<PurchaseOrderForm />} />
           <Route path="/dealer/manager/purchase-orders/list" element={<OrderRequestList />} />
       </Route>
       </Route>
 
       <Route element={<RequireAuth allowedRoles={["EVM_STAFF"]} />}>
-        <Route element={<DealerStaffLayout />}>
-          <Route path="/evm/staff/orders" element={<ManufacturerOrderList />} />
-          <Route path="/evm/staff/orders/:id" element={<ManufacturerOrderDetail />} />         
+        <Route element={<EvmLayout />}>
+          <Route path="/evm/dashboard" element={<EvmDashboard />} />
+          <Route path="/evm/orders" element={<ManufacturerOrderList />} />
+          <Route path="/evm/orders/:id" element={<ManufacturerOrderDetail />} />         
+          <Route path="/evm/delivery-batches/create" element={<ManufacturerDeliveryCreate />} />
       </Route>
       </Route>
 

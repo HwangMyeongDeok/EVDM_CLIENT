@@ -3,6 +3,7 @@ import authReducer from "@/features/auth/authSlice";
 import { vehicleApi } from "@/features/vehicles/api";
 import { dealerRequestApi } from "@/features/order/api";
 import { customerApi } from "@/features/customers/api";
+import { dealerVehicleAllocationApi } from "@/features/allocation/api";
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     [vehicleApi.reducerPath]: vehicleApi.reducer,
     [customerApi.reducerPath]: customerApi.reducer,
     [dealerRequestApi.reducerPath]: dealerRequestApi.reducer,
+    [dealerVehicleAllocationApi.reducerPath]: dealerVehicleAllocationApi.reducer
 
   },
   middleware: (getDefaultMiddleware) =>
@@ -17,6 +19,7 @@ export const store = configureStore({
       .concat(vehicleApi.middleware)
       .concat(dealerRequestApi.middleware)
       .concat(customerApi.middleware)
+      .concat(dealerVehicleAllocationApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

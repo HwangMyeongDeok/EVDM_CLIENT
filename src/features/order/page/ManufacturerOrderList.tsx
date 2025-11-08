@@ -26,6 +26,7 @@ import {
   Eye,
   Check,
   X,
+  Truck,
 } from "lucide-react";
 
 import {
@@ -201,6 +202,9 @@ export default function ManufacturerDealerRequestList() {
                   <TableHead className="font-bold text-gray-700">
                     Chi tiết
                   </TableHead>
+                  <TableHead className="font-bold text-gray-700">
+                    Giao hàng
+                  </TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -241,6 +245,22 @@ export default function ManufacturerDealerRequestList() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
+                      </TableCell>
+
+                      <TableCell>
+                        {req.status === "APPROVED" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              navigate(
+                                `/evm/delivery-batches/create?request_id=${req.request_id}`
+                              )
+                            }
+                          >
+                            <Truck className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
