@@ -7,15 +7,14 @@ import UnauthorizedPage from "@/features/misc/UnauthorizedPage";
 import AuthGuard from "@/features/auth/guards/AuthGuard";
 import PaymentFormPage from "@/features/dealer/staff/page/PaymentFormPage";
 import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage";
-
 import ContractListPage from "@/features/contract/page/ContractListPage";
 import ContractFormPage from "@/features/contract/page/ContractFormPage";
 import VehicleCatalog from "@/features/vehicles/page/VehicleCatalog";
 import QuotationListPage from "@/features/quotation/page/QuotationListPage";
 import QuotationCreatePage from "@/features/quotation/page/QuotationCreatePage";
 import VehicleDetailPage from "@/features/vehicles/page/VehicleDetail";
-import PaymentTestPage from "@/features/payments/page/ContractPaymentPage";
 import PaymentStatusPage from "@/features/payments/page/PaymentStatusPage";
+import PaymentCheckout from "@/features/payments/page/ContractPaymentPage";
 
 
 export default function App() {
@@ -56,7 +55,7 @@ export default function App() {
           <Route path="/dealer/staff/quotations/create/:variantId" element={<QuotationCreatePage />} />
           <Route path="/dealer/staff/quotations/edit/:id" element={<QuotationCreatePage />} />
 
-          <Route path="/dealer/staff/payment-test/:contractId?" element={<PaymentTestPage />} />
+          <Route path="/dealer/staff/payment-test/:contractId?" element={<PaymentCheckout />} />
           <Route path="/dealer/staff/payment-status" element={<PaymentStatusPage />} />
 
         </Route>

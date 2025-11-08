@@ -1,6 +1,6 @@
 import type { UserRole } from "@/types/enums";
 
-export interface User {
+export interface IUser {
   user_id: number; 
   email: string;
   password: string;
