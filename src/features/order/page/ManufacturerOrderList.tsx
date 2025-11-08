@@ -75,6 +75,7 @@ export default function ManufacturerDealerRequestList() {
     isFetching,
     refetch,
   } = useGetDealerRequestsQuery();
+  console.log(dealerRequests)
 
   const { data: vehicles = [] } = useGetVehiclesQuery();
 
@@ -92,7 +93,7 @@ export default function ManufacturerDealerRequestList() {
 
   // Lọc danh sách dựa trên tìm kiếm và bộ lọc
   const filteredRequests = dealerRequests.filter((req) => {
-    const variant = variantMap.get(req.variant_id);
+    const variant = variantMap.get(Number(req.variant_id));
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch =
       String(req.request_id).toLowerCase().includes(searchLower) ||
@@ -185,15 +186,6 @@ export default function ManufacturerDealerRequestList() {
                     Đại lý
                   </TableHead>
                   <TableHead className="font-bold text-gray-700">
-                    Phiên bản
-                  </TableHead>
-                  <TableHead className="font-bold text-gray-700">
-                    Màu xe
-                  </TableHead>
-                  <TableHead className="text-center font-bold text-gray-700">
-                    Số lượng
-                  </TableHead>
-                  <TableHead className="font-bold text-gray-700">
                     Ngày yêu cầu
                   </TableHead>
                   <TableHead className="font-bold text-gray-700">
@@ -210,7 +202,7 @@ export default function ManufacturerDealerRequestList() {
 
               <TableBody className="divide-y divide-gray-200">
                 {filteredRequests.map((req: DealerVehicleRequest) => {
-                  const variant = variantMap.get(req.variant_id);
+                  const variant = variantMap.get(Number(req.variant_id));
 
                   return (
                     <TableRow
@@ -221,11 +213,6 @@ export default function ManufacturerDealerRequestList() {
                         {req.request_id}
                       </TableCell>
                       <TableCell>{req.dealer_id}</TableCell>
-                      <TableCell>{variant?.version || "N/A"}</TableCell>
-                      <TableCell>{variant?.color || "N/A"}</TableCell>
-                      <TableCell className="text-center">
-                        {req.requested_quantity}
-                      </TableCell>
                       <TableCell>
                         {new Date(req.created_at ?? "").toLocaleDateString(
                           "vi-VN"
@@ -239,7 +226,7 @@ export default function ManufacturerDealerRequestList() {
                           size="sm"
                           onClick={() =>
                             navigate(
-                              `/evm/staff/orders/${req.request_id}`
+                              `/evm/orders/${req.request_id}`
                             )
                           }
                         >
@@ -254,7 +241,7 @@ export default function ManufacturerDealerRequestList() {
                             size="sm"
                             onClick={() =>
                               navigate(
-                                `/evm/delivery-batches/create?request_id=${req.request_id}`
+                                `/evm/delivery-batches/create/${req.request_id}`
                               )
                             }
                           >

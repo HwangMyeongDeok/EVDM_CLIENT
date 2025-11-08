@@ -10,17 +10,13 @@ import {
   Clock,
   ArrowLeft,
   Package,
-  User,
-  Calendar,
-  Truck,
-  Hash,
-  Palette,
-  FileText,
-  Building2,
-  Phone,
-  Mail,
-  MapPin,
   DollarSign,
+  FileText,
+  Truck,
+  Palette,
+  Calendar,
+  Hash,
+  Building2,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -39,8 +35,6 @@ import {
 } from "@/features/order/api";
 import { useGetVehiclesQuery } from "@/features/vehicles/api";
 import type { DealerVehicleRequest } from "@/types/dealer_vehicle_request";
-
-
 
 const getStatusBadge = (status: DealerVehicleRequest["status"]) => {
   switch (status) {
@@ -74,7 +68,7 @@ const getStatusBadge = (status: DealerVehicleRequest["status"]) => {
 export default function ManufacturerDealerRequestDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+
   const { data: requests = [], isLoading } = useGetDealerRequestsQuery();
   const { data: vehicles = [] } = useGetVehiclesQuery();
   const [updateStatus, { isLoading: isUpdating, isSuccess }] =
@@ -83,21 +77,32 @@ export default function ManufacturerDealerRequestDetail() {
   const [dialogAction, setDialogAction] = useState<"APPROVED" | "REJECTED" | null>(null);
 
   const request = requests.find((r) => String(r.request_id) === id);
+  console.log(requests)
+  // Tạo danh sách tất cả variant trong yêu cầu
+  const variantsInRequest = (request?.items || []).map(item => {
+  const v = vehicles
+    .flatMap(vehicle => vehicle.variants)
+    .find(variant => variant?.variant_id && variant.variant_id.toString() === item.variant_id?.toString());
+  return { ...item, variant: v };
+});
+  console.log(variantsInRequest);
 
-  // Tìm variant tương ứng
-  const variant = vehicles
-    .flatMap((v) => v.variants)
-    .find((v) => v.variant_id === request?.variant_id);
+  // Tổng số lượng
+  const totalQuantity = variantsInRequest.reduce(
+    (sum, item) => sum + (item.requested_quantity ?? 0),
+    0
+  );
 
-  // Tìm vehicle model
-  const vehicle = vehicles.find((v) =>
-    v.variants.some((variant) => variant.variant_id === request?.variant_id)
+  // Tổng giá trị
+  const totalValue = variantsInRequest.reduce(
+    (sum, item) => sum + (item.variant?.retail_price ?? 0) * (item.requested_quantity ?? 0),
+    0
   );
 
   useEffect(() => {
     if (isSuccess) {
       alert("✅ Cập nhật trạng thái thành công!");
-      navigate("/evm/staff/orders");
+      navigate("/evm/orders");
     }
   }, [isSuccess, navigate]);
 
@@ -135,7 +140,7 @@ export default function ManufacturerDealerRequestDetail() {
             <p className="text-gray-600 mb-6">
               Yêu cầu với mã "{id}" không tồn tại trong hệ thống.
             </p>
-            <Button onClick={() => navigate("/evm/staff/orders")}>
+            <Button onClick={() => navigate("/evm/orders")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Quay lại danh sách
             </Button>
@@ -151,13 +156,13 @@ export default function ManufacturerDealerRequestDetail() {
       <div className="mb-6">
         <Button
           variant="outline"
-          onClick={() => navigate("/evm/staff/orders")}
+          onClick={() => navigate("/evm/orders")}
           className="mb-4 hover:bg-gray-100"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Quay lại danh sách
         </Button>
-        
+
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
@@ -191,7 +196,7 @@ export default function ManufacturerDealerRequestDetail() {
                   </p>
                   <p className="font-semibold text-gray-900 text-lg">{request.request_id}</p>
                 </div>
-                
+
                 <div className="space-y-1">
                   <p className="text-sm text-gray-500 flex items-center">
                     <Building2 className="h-4 w-4 mr-1" />
@@ -245,122 +250,44 @@ export default function ManufacturerDealerRequestDetail() {
                 Thông tin xe đặt hàng
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1">
+            <CardContent className="pt-6 space-y-4">
+              {variantsInRequest.map((item, idx) => (
+                <div key={idx} className="border-b last:border-b-0 pb-4 last:pb-0">
                   <p className="text-sm text-gray-500">Dòng xe</p>
-                  <p className="font-bold text-gray-900 text-xl">
-                    {vehicle?.model_name || "N/A"}
+                  <p className="font-bold text-gray-900 text-lg">
+                    {item.variant?.vehicle?.model_name || "N/A"}
                   </p>
-                </div>
 
-                <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Phiên bản</p>
-                  <p className="font-bold text-gray-900 text-xl">
-                    {variant?.version || "N/A"}
-                  </p>
-                </div>
+                  <p className="text-sm text-gray-500 mt-1">Phiên bản</p>
+                  <p className="font-bold text-gray-900">{item.variant?.version || "N/A"}</p>
 
-                <div className="space-y-1">
-                  <p className="text-sm text-gray-500 flex items-center">
+                  <p className="text-sm text-gray-500 mt-1 flex items-center">
                     <Palette className="h-4 w-4 mr-1" />
                     Màu sắc
                   </p>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full border-2 border-gray-300 bg-gray-400"></div>
-                    <p className="font-semibold text-gray-900">{variant?.color || "N/A"}</p>
-                  </div>
-                </div>
+                  <p className="font-semibold text-gray-900">{item.variant?.color || "N/A"}</p>
 
-                <div className="space-y-1">
-                  <p className="text-sm text-gray-500 flex items-center">
-                    <DollarSign className="h-4 w-4 mr-1" />
-                    Giá bán (VNĐ)
-                  </p>
-                  <p className="font-semibold text-gray-900 text-lg">
-                    {variant?.base_price
-                      ? new Intl.NumberFormat("vi-VN").format(variant.base_price)
+                  <p className="text-sm text-gray-500 mt-1">Số lượng</p>
+                  <p className="font-semibold text-gray-900">{item.requested_quantity} xe</p>
+
+                  <p className="text-sm text-gray-500 mt-1">Giá bán (VNĐ)</p>
+                  <p className="font-semibold text-gray-900">
+                    {item.variant?.retail_price
+                      ? new Intl.NumberFormat("vi-VN").format(item.variant.retail_price)
                       : "N/A"}
                   </p>
-                </div>
 
-                <div className="space-y-1 md:col-span-2">
-                  <p className="text-sm text-gray-500">Mã phiên bản (Variant ID)</p>
-                  <p className="font-semibold text-gray-900">{request.variant_id}</p>
+                  <p className="text-sm text-gray-500 mt-1">Tổng giá trị</p>
+                  <p className="font-semibold text-gray-900">
+                    {item.variant?.retail_price
+                      ? new Intl.NumberFormat("vi-VN").format(
+                          item.variant.retail_price * item.requested_quantity
+                        )
+                      : "N/A"}{" "}
+                    VNĐ
+                  </p>
                 </div>
-              </div>
-
-              {vehicle?.description && (
-                <div className="pt-6 border-t mt-6">
-                  <p className="text-sm text-gray-500 mb-2 font-medium">Mô tả chi tiết</p>
-                  <p className="text-gray-700 leading-relaxed">{vehicle.description}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Lịch sử trạng thái */}
-          <Card className="shadow-lg border-gray-200">
-            <CardHeader className="bg-gradient-to-r from-orange-50 to-yellow-50">
-              <CardTitle className="flex items-center text-xl text-gray-800">
-                <Clock className="h-5 w-5 mr-2 text-orange-600" />
-                Lịch sử trạng thái
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0 w-3 h-3 rounded-full bg-blue-500 mt-1.5"></div>
-                  <div className="ml-4 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold text-gray-900">Yêu cầu được tạo</p>
-                      <span className="text-sm text-gray-500">
-                        {new Date(request.created_at ?? "").toLocaleDateString("vi-VN")}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Yêu cầu đặt hàng được khởi tạo bởi đại lý
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(request.created_at ?? "").toLocaleTimeString("vi-VN")}
-                    </p>
-                  </div>
-                </div>
-
-                {request.status !== "PENDING" && (
-                  <div className="flex items-start">
-                    <div
-                      className={`flex-shrink-0 w-3 h-3 rounded-full mt-1.5 ${
-                        request.status === "APPROVED" ? "bg-green-500" : "bg-red-500"
-                      }`}
-                    ></div>
-                    <div className="ml-4 flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-gray-900">
-                          {request.status === "APPROVED"
-                            ? "Yêu cầu được phê duyệt"
-                            : "Yêu cầu bị từ chối"}
-                        </p>
-                        <span className="text-sm text-gray-500">
-                          {request.updated_at
-                            ? new Date(request.updated_at).toLocaleDateString("vi-VN")
-                            : "N/A"}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {request.status === "APPROVED"
-                          ? "Yêu cầu đã được nhà sản xuất phê duyệt và chuẩn bị giao hàng"
-                          : "Yêu cầu bị từ chối bởi nhà sản xuất"}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {request.updated_at
-                          ? new Date(request.updated_at).toLocaleTimeString("vi-VN")
-                          : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              ))}
             </CardContent>
           </Card>
         </div>
@@ -372,54 +299,34 @@ export default function ManufacturerDealerRequestDetail() {
             <CardHeader>
               <CardTitle className="flex items-center text-lg text-gray-800">
                 <Package className="h-5 w-5 mr-2 text-blue-600" />
-                Số lượng yêu cầu
+                Tổng số lượng
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center py-4">
-                <p className="text-6xl font-bold text-blue-600">
-                  {request.requested_quantity}
-                </p>
+                <p className="text-6xl font-bold text-blue-600">{totalQuantity}</p>
                 <p className="text-gray-700 mt-2 text-lg font-medium">xe</p>
               </div>
             </CardContent>
           </Card>
 
           {/* Tổng giá trị */}
-          {variant?.retail_price && (
-            <Card className="shadow-lg border-green-300 bg-gradient-to-br from-green-50 to-green-100">
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg text-gray-800">
-                  <DollarSign className="h-5 w-5 mr-2 text-green-600" />
-                  Tổng giá trị đơn hàng
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-4">
-                  <p className="text-4xl font-bold text-green-600">
-                    {new Intl.NumberFormat("vi-VN").format(
-                      variant.retail_price * request.requested_quantity
-                    )}
-                  </p>
-                  <p className="text-gray-700 mt-1 text-lg">VNĐ</p>
-                  <div className="mt-4 pt-4 border-t border-green-200">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Đơn giá:</span>
-                      <span className="font-semibold text-gray-800">
-                        {new Intl.NumberFormat("vi-VN").format(variant.retail_price)} VNĐ
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm mt-2">
-                      <span className="text-gray-600">Số lượng:</span>
-                      <span className="font-semibold text-gray-800">
-                        {request.requested_quantity} xe
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <Card className="shadow-lg border-green-300 bg-gradient-to-br from-green-50 to-green-100">
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg text-gray-800">
+                <DollarSign className="h-5 w-5 mr-2 text-green-600" />
+                Tổng giá trị đơn hàng
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-4">
+                <p className="text-4xl font-bold text-green-600">
+                  {new Intl.NumberFormat("vi-VN").format(totalValue)}
+                </p>
+                <p className="text-gray-700 mt-1 text-lg">VNĐ</p>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Hành động */}
           {request.status === "PENDING" && (
@@ -459,56 +366,6 @@ export default function ManufacturerDealerRequestDetail() {
               </CardContent>
             </Card>
           )}
-
-          {request.status !== "PENDING" && (
-            <Card className="shadow-lg border-gray-200">
-              <CardContent className="pt-6">
-                <div className="text-center space-y-3">
-                  {request.status === "APPROVED" ? (
-                    <>
-                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                        <Check className="h-10 w-10 text-green-600" />
-                      </div>
-                      <p className="font-bold text-green-700 text-lg">
-                        Yêu cầu đã được phê duyệt
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Đơn hàng đang được xử lý và chuẩn bị giao hàng
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-                        <X className="h-10 w-10 text-red-600" />
-                      </div>
-                      <p className="font-bold text-red-700 text-lg">
-                        Yêu cầu đã bị từ chối
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Yêu cầu này không được phê duyệt
-                      </p>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Ghi chú */}
-          <Card className="shadow-lg border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-lg text-gray-800">Ghi chú</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                {request.status === "PENDING"
-                  ? "Vui lòng xem xét kỹ thông tin trước khi phê duyệt hoặc từ chối yêu cầu."
-                  : request.status === "APPROVED"
-                  ? "Yêu cầu đã được phê duyệt. Bạn có thể cập nhật thông tin giao hàng trong phần quản lý đơn hàng."
-                  : "Yêu cầu đã bị từ chối. Đại lý có thể tạo yêu cầu mới nếu cần."}
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </div>
 

@@ -24,8 +24,14 @@ import { useNavigate } from "react-router-dom";
 
 import { useGetVehiclesQuery } from "@/features/vehicles/api";
 import { useCreateDealerRequestMutation } from "@/features/order/api";
-import type { DealerVehicleRequest } from "@/types/dealer_vehicle_request";
 import type { IVehicle, IVehicleVariant } from "@/types/vehicle";
+
+export const RequestStatus = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+  PARTIAL: "PARTIAL",
+} as const;
 
 type RequestItem = {
   vehicle: IVehicle;
@@ -48,7 +54,7 @@ export default function PurchaseRequestForm() {
   const { data: vehicleOptions = [], isLoading } = useGetVehiclesQuery();
   const [createDealerRequest, { isLoading: isCreating }] = useCreateDealerRequestMutation();
 
-  const dealer_id = "D001"; // Giả lập ID đại lý (sau này lấy từ auth)
+  const dealer_id = "D001"; // giả lập - sau này lấy từ auth
 
   const selectedVehicle = vehicleOptions.find(
     (v: IVehicle) => v.vehicle_id === selectedVehicleId
@@ -109,6 +115,7 @@ export default function PurchaseRequestForm() {
     0
   );
 
+  // ✅ Gửi 1 request duy nhất chứa nhiều items
   const handleSubmitRequest = async () => {
     if (items.length === 0) {
       alert("Vui lòng thêm ít nhất một xe vào yêu cầu.");
@@ -120,20 +127,19 @@ export default function PurchaseRequestForm() {
     }
 
     try {
-      const payloads: Partial<DealerVehicleRequest>[] = items.map((i) => ({
+      const payload = {
         dealer_id,
-        variant_id: i.variant.variant_id,
-        color: i.color,
-        requested_quantity: i.qty,
+        items: items.map((i) => ({
+          variant_id: i.variant.variant_id.toString(),
+          requested_quantity: i.qty,
+        })),
         request_date: orderDate,
-        status: "PENDING",
-      }));
+        notes,
+        status: RequestStatus.PENDING,
+      };
 
-      // Gửi tuần tự để backend tự tạo request_id
-      for (const body of payloads) {
-        const res = await createDealerRequest(body).unwrap();
-        console.log("✅ Đã tạo yêu cầu với ID:", res.request_id);
-      }
+      console.log("📦 Payload gửi BE:", payload);
+      await createDealerRequest(payload).unwrap();
 
       alert("✅ Yêu cầu đã gửi thành công! Bạn sẽ được chuyển hướng đến trang danh sách.");
       setItems([]);
@@ -157,10 +163,12 @@ export default function PurchaseRequestForm() {
 
   return (
     <div className="p-6 md:p-8 lg:p-10 space-y-8">
-      <h2 className="text-3xl font-bold tracking-tight text-gray-800">📋 Tạo Yêu cầu Đặt xe</h2>
+      <h2 className="text-3xl font-bold tracking-tight text-gray-800">
+        📋 Tạo Yêu cầu Đặt xe
+      </h2>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Cột 1: Thông tin chung */}
+        {/* --- CỘT 1: Thông tin chung --- */}
         <div className="lg:col-span-1 space-y-6">
           <Card className="shadow-sm">
             <CardHeader className="border-b p-4">
@@ -168,7 +176,9 @@ export default function PurchaseRequestForm() {
             </CardHeader>
             <CardContent className="p-4 space-y-4">
               <div>
-                <Label htmlFor="orderDate" className="font-medium">Ngày yêu cầu</Label>
+                <Label htmlFor="orderDate" className="font-medium">
+                  Ngày yêu cầu
+                </Label>
                 <Input
                   id="orderDate"
                   type="date"
@@ -196,7 +206,7 @@ export default function PurchaseRequestForm() {
             <CardContent className="p-4">
               <Textarea
                 id="notes"
-                placeholder="Thêm ghi chú đặc biệt cho yêu cầu này (ví dụ: cần giao gấp trước ngày X)..."
+                placeholder="Thêm ghi chú đặc biệt cho yêu cầu này..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={5}
@@ -205,7 +215,7 @@ export default function PurchaseRequestForm() {
           </Card>
         </div>
 
-        {/* Cột 2 & 3: Chi tiết yêu cầu */}
+        {/* --- CỘT 2 & 3: Chi tiết yêu cầu --- */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="shadow-lg border-blue-500/30">
             <CardHeader className="bg-blue-50/50 rounded-t-lg border-b p-4">
@@ -311,10 +321,12 @@ export default function PurchaseRequestForm() {
             </CardContent>
           </Card>
 
-          {/* Bảng chi tiết */}
+          {/* Bảng danh sách chi tiết */}
           <Card className="shadow-lg">
             <CardHeader className="border-b p-4">
-              <CardTitle className="text-xl font-semibold">Các mục đã thêm ({items.length})</CardTitle>
+              <CardTitle className="text-xl font-semibold">
+                Các mục đã thêm ({items.length})
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {items.length === 0 ? (
@@ -325,31 +337,32 @@ export default function PurchaseRequestForm() {
                 <Table>
                   <TableHeader className="bg-gray-50">
                     <TableRow>
-                      <TableHead className="font-bold text-gray-700">Mẫu xe</TableHead>
-                      <TableHead className="font-bold text-gray-700">Phiên bản</TableHead>
-                      <TableHead className="font-bold text-gray-700">Màu xe</TableHead>
-                      <TableHead className="text-center font-bold text-gray-700">SL</TableHead>
-                      <TableHead className="text-right font-bold text-gray-700 w-[150px]">Giá (VND)</TableHead>
-                      <TableHead className="text-right font-bold text-gray-700 w-[180px]">Thành tiền</TableHead>
-                      <TableHead className="text-center w-[60px]"></TableHead>
+                      <TableHead>Mẫu xe</TableHead>
+                      <TableHead>Phiên bản</TableHead>
+                      <TableHead>Màu xe</TableHead>
+                      <TableHead className="text-center">SL</TableHead>
+                      <TableHead className="text-right">Giá (VND)</TableHead>
+                      <TableHead className="text-right">Thành tiền</TableHead>
+                      <TableHead className="text-center"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {items.map((i, idx) => (
-                      <TableRow key={idx} className="hover:bg-gray-100 transition-colors">
-                        <TableCell className="font-medium">{i.vehicle.model_name}</TableCell>
-                        <TableCell className="text-gray-600">{i.variant.version}</TableCell>
+                      <TableRow key={idx}>
+                        <TableCell>{i.vehicle.model_name}</TableCell>
+                        <TableCell>{i.variant.version}</TableCell>
                         <TableCell>{i.color}</TableCell>
-                        <TableCell className="text-center font-semibold">{i.qty}</TableCell>
-                        <TableCell className="text-right">{formatPrice(i.variant.retail_price)}</TableCell>
-                        <TableCell className="text-right font-bold text-blue-600">
+                        <TableCell className="text-center">{i.qty}</TableCell>
+                        <TableCell className="text-right">
+                          {formatPrice(i.variant.retail_price)}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-blue-600">
                           {formatPrice(i.variant.retail_price * i.qty)}
                         </TableCell>
                         <TableCell className="text-center">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="hover:bg-red-50/50"
                             onClick={() => handleRemoveItem(idx)}
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
@@ -357,9 +370,11 @@ export default function PurchaseRequestForm() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    <TableRow className="bg-gray-50 hover:bg-gray-50">
-                      <TableCell colSpan={5} className="text-right text-lg font-bold">Tổng Cộng:</TableCell>
-                      <TableCell className="text-right text-xl font-extrabold text-blue-600">
+                    <TableRow className="bg-gray-50">
+                      <TableCell colSpan={5} className="text-right font-bold">
+                        Tổng cộng:
+                      </TableCell>
+                      <TableCell className="text-right font-extrabold text-blue-600">
                         {formatPrice(total)}
                       </TableCell>
                     </TableRow>
@@ -374,7 +389,9 @@ export default function PurchaseRequestForm() {
             <Button variant="outline" onClick={() => navigate(-1)}>
               Hủy / Quay lại
             </Button>
-            <Button variant="secondary" disabled={isCreating}>Lưu nháp</Button>
+            <Button variant="secondary" disabled={isCreating}>
+              Lưu nháp
+            </Button>
             <Button
               onClick={handleSubmitRequest}
               className="bg-blue-600 hover:bg-blue-700"

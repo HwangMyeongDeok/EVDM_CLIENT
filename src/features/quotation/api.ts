@@ -1,7 +1,7 @@
 import instance from "@/lib/axios";
 
 // Types
-export type QuotationStatus = "DRAFT" | "SENT" | "APPROVED" | "REJECTED";
+
 
 export interface CreateQuotationItemDto {
   variantId: number;
@@ -15,7 +15,6 @@ export interface CreateQuotationDto {
 }
 
 export interface UpdateQuotationDto {
-  status?: QuotationStatus;
   notes?: string;
   discount_total?: number;
   total_amount?: number;
@@ -85,7 +84,6 @@ export interface QuotationResponse {
   customer_id: number;
   dealer_id: number;
   user_id: number;
-  status: QuotationStatus;
   subtotal: string;
   tax_rate: string;
   tax_amount: string;

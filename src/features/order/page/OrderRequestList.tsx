@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGetDealerRequestsQuery } from "@/features/order/api";
-import { useGetVehiclesQuery } from "@/features/vehicles/api"; // 💡 Thêm import này
+import { useGetVehiclesQuery } from "@/features/vehicles/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +82,7 @@ export default function DealerRequestList() {
 
   // --- Lấy dữ liệu ---
   const { data: flatRequests = [], isLoading, isFetching } = useGetDealerRequestsQuery();
+  console.log(flatRequests)
   const { data: vehicles = [] } = useGetVehiclesQuery();
 
   // --- Map variant_id → thông tin xe ---
@@ -100,11 +101,14 @@ export default function DealerRequestList() {
     return map;
   }, [vehicles]);
 
-  // --- Gắn thêm variant info vào từng request ---
+  // --- Gắn thêm variant info vào từng item ---
   const enrichedRequests = useMemo(() => {
     return flatRequests.map((r) => ({
       ...r,
-      variant: variantMap.get(r.variant_id),
+      items: (r.items || []).map((item) => ({
+        ...item,
+        variant: variantMap.get(Number(item.variant_id)),
+      })),
     }));
   }, [flatRequests, variantMap]);
 
@@ -112,8 +116,10 @@ export default function DealerRequestList() {
   const summaryStats = useMemo(() => {
     return enrichedRequests.reduce(
       (acc, req) => {
-        const price = req.variant?.retail_price ?? 0;
-        const value = price * (req.requested_quantity ?? 0);
+        const value = (req.items || []).reduce((sum: number, item: any) => {
+          const price = item.variant?.retail_price ?? 0;
+          return sum + price * (item.requested_quantity ?? 0);
+        }, 0);
 
         if (req.status !== "REJECTED") acc.totalValue += value;
         if (req.status === "PENDING") acc.pendingCount++;
@@ -129,35 +135,31 @@ export default function DealerRequestList() {
   // --- Lọc & tìm kiếm ---
   const filteredRequests = useMemo(() => {
     return enrichedRequests
-      .filter((req) => {
-        if (statusFilter === "ALL") return true;
-        return req.status === statusFilter;
-      })
+      .filter((req) => (statusFilter === "ALL" ? true : req.status === statusFilter))
       .filter((req) => {
         if (!searchTerm) return true;
         const code = String((req as any).request_code ?? req.request_id ?? "");
         const dealerName = String((req as any).dealer?.name ?? req.dealer_id ?? "");
-        const variantName = String(req.variant?.model_name ?? "");
+        const variantNames = (req.items || [])
+          .map((item) => item.variant?.model_name ?? "")
+          .join(" ");
         const term = searchTerm.toLowerCase();
         return (
           code.toLowerCase().includes(term) ||
           dealerName.toLowerCase().includes(term) ||
-          variantName.toLowerCase().includes(term)
+          variantNames.toLowerCase().includes(term)
         );
       })
-      .sort(
-        (a, b) => {
-          const aCode = (a as any).request_code ?? a.request_id ?? 0;
-          const bCode = (b as any).request_code ?? b.request_id ?? 0;
-          return aCode - bCode; // Sắp xếp từ thấp đến cao (ascending)
-        }
-      );
+      .sort((a, b) => {
+        const aCode = (a as any).request_code ?? a.request_id ?? 0;
+        const bCode = (b as any).request_code ?? b.request_id ?? 0;
+        return aCode - bCode;
+      });
   }, [enrichedRequests, searchTerm, statusFilter]);
 
   const formatPrice = (value: number) =>
     value.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
 
-  // --- Loading ---
   if (isLoading)
     return (
       <div className="p-8 flex items-center justify-center min-h-[300px]">
@@ -166,13 +168,14 @@ export default function DealerRequestList() {
       </div>
     );
 
-  // --- Render ---
   return (
-    <div className="p-6 md:p-8 lg:p-10 bg-gray-50 min-h-screen"> {/* Thêm bg để thoáng */}
+    <div className="p-6 md:p-8 lg:p-10 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Quản Lý Đơn Hàng Đặt Xe</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+            Quản Lý Đơn Hàng Đặt Xe
+          </h1>
           <p className="text-gray-500 mt-1">Quản lý đơn hàng đại lý đặt lên hãng</p>
         </div>
         <Button
@@ -256,10 +259,10 @@ export default function DealerRequestList() {
       {/* Table */}
       <Card className="shadow-lg border-gray-200 overflow-hidden">
         <CardContent className="p-0">
-          <div className="overflow-x-auto"> {/* Thêm responsive */}
+          <div className="overflow-x-auto">
             {filteredRequests.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-lg flex flex-col items-center">
-                <SearchX className="h-12 w-12 text-gray-400 mb-4" /> {/* Thêm icon */}
+                <SearchX className="h-12 w-12 text-gray-400 mb-4" />
                 <p className="text-lg font-medium text-gray-500">Không tìm thấy đơn hàng nào.</p>
                 <p className="text-sm text-gray-400 mt-1">
                   Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
@@ -271,52 +274,45 @@ export default function DealerRequestList() {
                   <TableRow>
                     <TableHead className="font-bold text-gray-700 px-6 py-3">Mã Đơn</TableHead>
                     <TableHead className="font-bold text-gray-700 px-6 py-3">Đại Lý</TableHead>
-                    <TableHead className="font-bold text-gray-700 px-6 py-3">Mẫu Xe</TableHead>
                     <TableHead className="font-bold text-gray-700 px-6 py-3">Ngày Tạo</TableHead>
                     <TableHead className="font-bold text-gray-700 px-6 py-3">Giờ Tạo</TableHead>
-                    <TableHead className="text-center font-bold text-gray-700 px-6 py-3">Số Lượng</TableHead>
                     <TableHead className="text-right font-bold text-gray-700 px-6 py-3">Tổng Giá Trị</TableHead>
                     <TableHead className="font-bold text-gray-700 px-6 py-3">Trạng Thái</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-200">
                   {filteredRequests.map((req) => {
-                    const price = req.variant?.retail_price ?? 0;
-                    const lineValue = price * (req.requested_quantity ?? 0);
                     const reqCode = (req as any).request_code ?? req.request_id;
                     const reqDate = (req as any).created_at ?? new Date();
 
+                    const totalValue = (req.items || []).reduce((sum: number, item: any) => {
+                      const price = item.variant?.retail_price ?? 0;
+                      return sum + price * (item.requested_quantity ?? 0);
+                    }, 0);
+
                     return (
-                      <TableRow key={req.request_id} className="hover:bg-gray-50 transition-colors duration-200">
-                        <TableCell className="font-medium text-blue-600 px-6 py-4">
+                      <TableRow
+                        key={req.request_id}
+                        className="hover:bg-gray-50 transition-colors duration-200"
+                      >
+                        <TableCell className="font-medium text-blue-600 px-6 py-4 align-top">
                           {reqCode}
                         </TableCell>
-                        <TableCell className="px-6 py-4">
-                          {(req as any).dealer?.name ?? req.dealer_id ?? "N/A"} {/* Ưu tiên tên nếu có */}
+                        <TableCell className="px-6 py-4 align-top">
+                          {(req as any).dealer?.dealer_name ?? req.dealer_id ?? "N/A"}
                         </TableCell>
-
-                        <TableCell className="font-medium px-6 py-4">
-                          {req.variant?.model_name ?? "N/A"}
-                          <div className="text-xs text-gray-400">
-                            {req.variant?.version} – {req.variant?.color}
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-6 py-4 text-gray-600">
+                        <TableCell className="px-6 py-4 text-gray-600 align-top">
                           {new Date(reqDate).toLocaleDateString("vi-VN")}
                         </TableCell>
-                        <TableCell className="px-6 py-4 text-gray-600">
+                        <TableCell className="px-6 py-4 text-gray-600 align-top">
                           {new Date(reqDate).toLocaleTimeString("vi-VN")}
                         </TableCell>
-
-                        <TableCell className="text-center px-6 py-4">
-                          {req.requested_quantity} xe
+                        <TableCell className="text-right font-semibold px-6 py-4 align-top">
+                          {formatPrice(totalValue)}
                         </TableCell>
-
-                        <TableCell className="text-right font-semibold px-6 py-4">
-                          {formatPrice(lineValue)}
+                        <TableCell className="px-6 py-4 align-top">
+                          {getStatusBadge(req.status)}
                         </TableCell>
-
-                        <TableCell className="px-6 py-4">{getStatusBadge(req.status)}</TableCell>
                       </TableRow>
                     );
                   })}

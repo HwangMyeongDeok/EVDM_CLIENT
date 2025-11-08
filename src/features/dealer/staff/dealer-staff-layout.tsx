@@ -43,7 +43,7 @@ export function DealerStaffLayout() {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate("/login");
+     navigate("/login", { replace: true });
   };
 
   return (

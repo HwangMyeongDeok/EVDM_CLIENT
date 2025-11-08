@@ -30,7 +30,7 @@ export const dealerRequestApi = createApi({
 
     // Lấy yêu cầu theo ID
     getDealerRequestById: builder.query<DealerVehicleRequest, string>({
-      query: (id) => ({ url: `/api/v1/dealer-requests/${id}`, method: "GET" }),
+      query: (id) => ({ url: `/dealer-requests/${id}`, method: "GET" }),
       transformResponse: (response: any) => {
         console.log("🔍 DealerRequestById response:", response);
         if (response?.data) return response.data; // dạng { success, data }
