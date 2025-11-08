@@ -8,7 +8,7 @@ import AuthGuard from "@/features/auth/guards/AuthGuard";
 import PaymentFormPage from "@/features/dealer/staff/page/PaymentFormPage";
 import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage";
 import ContractListPage from "@/features/contract/page/ContractListPage";
-import ContractFormPage from "@/features/contract/page/ContractFormPage";
+import ContractFromQuotationPage from "@/features/contract/page/ContractFromQuotationPage";
 import VehicleCatalog from "@/features/vehicles/page/VehicleCatalog";
 import QuotationListPage from "@/features/quotation/page/QuotationListPage";
 import QuotationCreatePage from "@/features/quotation/page/QuotationCreatePage";
@@ -34,27 +34,24 @@ export default function App() {
             element={<DealerStaffDashboard />}
           />
 
-          <Route
-            path="/dealer/staff/PaymentFormPage"
-            element={<PaymentFormPage />}
-          />
-          <Route
-            path="/dealer/staff/PaymentHistoryPage"
-            element={<PaymentHistoryPage />}
-          />
+            <Route
+              path="/dealer/staff/PaymentFormPage"
+              element={<PaymentFormPage />}
+            />
+            <Route
+              path="/dealer/staff/PaymentHistoryPage"
+              element={<PaymentHistoryPage />}
+            />
 
-
+            
           <Route path="/dealer/staff/vehicles" element={<VehicleCatalog />} />
           <Route path="/dealer/staff/vehicles/:id" element={<VehicleDetailPage />} />
           <Route path="/dealer/staff/contracts" element={<ContractListPage />} />
-          <Route path="/dealer/staff/contracts/new" element={<ContractFormPage />} />
-          <Route path="/dealer/staff/contracts/edit/:id" element={<ContractFormPage />} />
-
+          <Route path="/dealer/staff/contracts/new" element={<ContractFromQuotationPage />} />
           <Route path="/dealer/staff/quotations" element={<QuotationListPage />} />
           <Route path="/dealer/staff/quotations/new" element={<QuotationCreatePage />} />
           <Route path="/dealer/staff/quotations/create/:variantId" element={<QuotationCreatePage />} />
           <Route path="/dealer/staff/quotations/edit/:id" element={<QuotationCreatePage />} />
-
           <Route path="/dealer/staff/payment-test/:contractId?" element={<PaymentCheckout />} />
           <Route path="/dealer/staff/payment-status" element={<PaymentStatusPage />} />
 
