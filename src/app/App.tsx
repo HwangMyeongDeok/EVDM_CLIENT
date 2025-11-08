@@ -6,8 +6,8 @@ import { DealerStaffLayout } from "@/features/dealer/staff/dealer-staff-layout";
 import UnauthorizedPage from "@/features/misc/UnauthorizedPage";
 import AuthGuard from "@/features/auth/guards/AuthGuard";
 import PaymentFormPage from "@/features/dealer/staff/page/PaymentFormPage";
-import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage"; 
 
+import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage"; 
 import ContractListPage from "@/features/contract/page/ContractListPage";
 import VehicleCatalog from "@/features/vehicles/page/VehicleCatalog";
 import PurchaseOrderForm from "@/features/order/page/PurchaseOrderForm";
@@ -17,13 +17,16 @@ import ManufacturerOrderList from "@/features/order/page/ManufacturerOrderList";
 import ManufacturerOrderDetail from "@/features/order/page/ManufacturerOrderDetail";
 import RequireAuth from "@/features/auth/guards/RequireAuth";
 import VehicleDetailPage from "@/features/vehicles/page/VehicleDetail";
-import PaymentTestPage from "@/features/payments/page/ContractPaymentPage";
 import OrderRequestList from "@/features/order/page/OrderRequestList";
 import ManufacturerDeliveryCreate from "@/features/allocation/page/ManufacturerDeliveryCreate";
 import { DealerManagerLayout } from "@/features/dealer/manager/dealer-manager-layout";
 import EvmDashboard from "@/features/evm-staff/Dashboard";
 import { EvmLayout } from "@/features/evm-staff/evm-layout";
 import ContractFromQuotationPage from "@/features/contract/page/ContractFromQuotationPage";
+
+
+import PaymentStatusPage from "@/features/payments/page/PaymentStatusPage";
+import PaymentCheckout from "@/features/payments/page/ContractPaymentPage";
 
 
 
@@ -64,7 +67,8 @@ export default function App() {
           <Route path="/dealer/staff/quotations/new" element={<QuotationCreatePage />} />        
           <Route path="/dealer/staff/quotations/create/:variantId" element={<QuotationCreatePage />} />
           <Route path="/dealer/staff/quotations/edit/:id" element={<QuotationCreatePage />} />
-        <Route path="/dealer/staff/payment-test/:contractId?" element={<PaymentTestPage />} />
+          <Route path="/dealer/staff/payment-test/:contractId?" element={<PaymentCheckout />} />
+          <Route path="/dealer/staff/payment-status" element={<PaymentStatusPage />} />
 
         </Route>
         </Route>

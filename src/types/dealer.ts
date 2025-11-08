@@ -1,4 +1,4 @@
-export interface Dealer {
+export interface IDealer {
   dealer_id: string;
   dealer_name: string;
   address?: string;
