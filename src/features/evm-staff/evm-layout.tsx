@@ -13,29 +13,53 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Car,
-  FileText,
-  FileSignature,
-  Users,
-  BarChart3,
+  Factory, // (MỚI) Biểu tượng hãng
+  Zap,
   Menu,
   X,
   LogOut,
   User,
-  Zap,
-  CreditCard,
+  LayoutDashboard,
+  BarChart3,
+  Building,       // (MỚI) Quản lý đại lý
+  ClipboardList,  // (MỚI) Đơn hàng PO
+  Warehouse,      // (MỚI) Kho tổng
+  Truck,          // (MỚI) Vận chuyển
+  BadgeDollarSign,// (MỚI) Quyết toán/Thưởng
 } from "lucide-react";
 
-const menuItems = [
-  { icon: Car, label: "Vehicles", href: "/dealer/staff/vehicles" },
-  { icon: FileText, label: "Quotations", href: "/dealer/staff/quotations" },
-  { icon: FileSignature, label: "Contracts", href: "/dealer/staff/contracts" },
-  { icon: Users, label: "Customers", href: "/dealer/staff/customers" },
-  { icon: CreditCard , label: "Payment", href: "/dealer/staff/PaymentHistoryPage" },
-  { icon: BarChart3, label: "Reports", href: "/dealer/staff/reports" },
+// --- CẬP NHẬT MENU CHO EVM (HÃNG XE) ---
+const evmMenuItems = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/evm/dashboard" },
+  {
+    icon: Building,
+    label: "Quản Lý Đại Lý",
+    href: "/evm/dealers",
+  }, // Quản lý thông tin, hạn mức
+  {
+    icon: ClipboardList,
+    label: "Đơn Hàng (PO)",
+    href: "/evm/orders",
+  }, // (L2.2: Duyệt đơn)
+  {
+    icon: Warehouse,
+    label: "Kho Xe (Tổng)",
+    href: "/evm/inventory",
+  }, // Quản lý sản xuất/nhập khẩu
+  {
+    icon: Truck,
+    label: "Vận Chuyển",
+    href: "/evm/logistics",
+  }, // (L2.4: Giao hàng)
+  {
+    icon: BadgeDollarSign,
+    label: "Quyết Toán",
+    href: "/evm/settlements",
+  }, // (L3: Thưởng sales)
+  { icon: BarChart3, label: "Báo Cáo Toàn Quốc", href: "/evm/reports" },
 ];
 
-export function DealerStaffLayout() {
+export function EvmLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useAppSelector(selectAuth);
   const dispatch = useAppDispatch();
@@ -43,11 +67,12 @@ export function DealerStaffLayout() {
 
   const handleLogout = () => {
     dispatch(logout());
-     navigate("/login", { replace: true });
+    navigate("/login");
   };
 
   return (
     <div className="min-h-screen bg-background">
+      {/* --- Header --- */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-16 items-center gap-4 px-4">
           <Button
@@ -56,34 +81,32 @@ export function DealerStaffLayout() {
             className="md:hidden"
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
-            {sidebarOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
+          {/* --- Logo/Title của Hãng --- */}
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Car className="h-6 w-6 text-blue-600" />
+              <Factory className="h-6 w-6 text-primary" />
               <Zap className="h-3 w-3 text-yellow-500 absolute -bottom-0.5 -right-0.5" />
             </div>
             <span className="font-semibold text-lg hidden sm:inline">
-            <Link to ="/dealer/staff/dashboard"> EV DMS</Link>
+              <Link to="/evm/dashboard">EVM Portal</Link>
             </span>
           </div>
 
           <div className="flex-1" />
 
+          {/* --- User Dropdown (Giả sử user là nhân viên của Hãng) --- */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-blue-600 text-white">
-                    {user?.full_name?.charAt(0).toUpperCase()}
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {user?.full_name?.charAt(0).toUpperCase() || "A"}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden sm:inline">{user?.full_name}</span>
+                <span className="hidden sm:inline">{user?.full_name || "Admin Hãng"}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -92,7 +115,7 @@ export function DealerStaffLayout() {
                   <p className="text-sm font-medium">{user?.full_name}</p>
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                   <p className="text-xs text-muted-foreground capitalize">
-                    {user?.role?.replace("_", " ")}
+                    {user?.role?.replace("_", " ") || "EVM Admin"}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -114,14 +137,16 @@ export function DealerStaffLayout() {
         </div>
       </header>
 
+      {/* --- Sidebar & Content Area --- */}
       <div className="flex">
         <aside
           className={`fixed inset-y-0 left-0 z-40 w-64 border-r bg-background transition-transform duration-300 ease-in-out md:translate-x-0 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           } top-16`}
         >
+          {/* --- Navigation MỚI của EVM --- */}
           <nav className="flex flex-col gap-2 p-4">
-            {menuItems.map((item) => (
+            {evmMenuItems.map((item) => (
               <Link
                 key={item.label}
                 to={item.href}
@@ -135,11 +160,13 @@ export function DealerStaffLayout() {
           </nav>
         </aside>
 
+        {/* --- Main Content --- */}
         <main className="flex-1 md:ml-64 p-6">
           <Outlet />
         </main>
       </div>
 
+      {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/50 md:hidden"

@@ -12,7 +12,9 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  user: null,
+   user: localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user") as string)
+    : null,
   accessToken: localStorage.getItem("access_token"),
   refreshToken: localStorage.getItem("refresh_token"),
   loading: false,
@@ -28,6 +30,7 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.refreshToken = null;
       state.error = null;
+      localStorage.removeItem("user");
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
     },

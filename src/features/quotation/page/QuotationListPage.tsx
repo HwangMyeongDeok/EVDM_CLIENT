@@ -41,15 +41,8 @@ import {
   getQuotations,
   deleteQuotation,
   type QuotationResponse,
-  type QuotationStatus,
 } from "../api";
 
-const statusConfig: Record<QuotationStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  DRAFT: { label: "Bản nháp", variant: "secondary" },
-  SENT: { label: "Đã gửi", variant: "default" },
-  APPROVED: { label: "Đã duyệt", variant: "default" },
-  REJECTED: { label: "Từ chối", variant: "destructive" },
-};
 
 export default function QuotationListPage() {
   const navigate = useNavigate();
@@ -96,14 +89,11 @@ export default function QuotationListPage() {
       });
     }
 
-    if (statusFilter !== "ALL") {
-      filtered = filtered.filter((q) => q.status === statusFilter);
-    }
 
     setFilteredQuotations(filtered);
   };
 
-  const handleDeleteClick = (quotationId: number, status: QuotationStatus) => {
+  const handleDeleteClick = (quotationId: number) => {
     if (status !== "DRAFT") {
       toast.error("Chỉ có thể xóa báo giá ở trạng thái Bản nháp");
       return;
@@ -240,7 +230,6 @@ export default function QuotationListPage() {
                     <TableHead>Khách hàng</TableHead>
                     <TableHead>Xe liên quan</TableHead>
                     <TableHead className="text-right">Tổng giá</TableHead>
-                    <TableHead>Trạng thái</TableHead>
                     <TableHead>Ngày tạo</TableHead>
                     <TableHead className="text-right">Thao tác</TableHead>
                   </TableRow>
@@ -271,18 +260,13 @@ export default function QuotationListPage() {
                       <TableCell className="text-right font-semibold">
                         {formatCurrency(quotation.total_amount)}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={statusConfig[quotation.status].variant}>
-                          {statusConfig[quotation.status].label}
-                        </Badge>
-                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(quotation.created_at)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           {/* Convert to Contract button - only for non-DRAFT status */}
-                          {quotation.status !== "DRAFT" && (
+                          
                             <Button
                               size="sm"
                               variant="default"
@@ -292,23 +276,21 @@ export default function QuotationListPage() {
                               <FileText className="h-4 w-4 mr-1" />
                               Hợp đồng
                             </Button>
-                          )}
+                          
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => navigate(`/dealer/staff/quotations/edit/${quotation.quotation_id}`)}
                           >
                             <Pencil className="h-4 w-4" />
-                          </Button>
-                          {quotation.status === "DRAFT" && (
+                          </Button> 
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleDeleteClick(quotation.quotation_id, quotation.status)}
+                              onClick={() => handleDeleteClick(quotation.quotation_id)}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>
