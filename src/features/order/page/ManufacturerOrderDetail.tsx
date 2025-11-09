@@ -35,6 +35,14 @@ import {
 } from "@/features/order/api";
 import { useGetVehiclesQuery } from "@/features/vehicles/api";
 import type { DealerVehicleRequest } from "@/types/dealer_vehicle_request";
+// Giả sử bạn có các kiểu dữ liệu này (hoặc chúng được suy ra từ hook)
+// import type { IVehicle, IVehicleVariant } from "@/types/vehicle"; 
+
+// !! LƯU Ý: Đảm bảo IVehicleVariant của bạn có thể chứa trường 'vehicle'
+// interface IVehicleVariant {
+//   // ...
+//   vehicle?: IVehicle; 
+// }
 
 const getStatusBadge = (status: DealerVehicleRequest["status"]) => {
   switch (status) {
@@ -78,7 +86,10 @@ export default function ManufacturerDealerRequestDetail() {
 
   const request = requests.find((r) => String(r.request_id) === id);
   console.log(requests)
-  // Tạo danh sách tất cả variant trong yêu cầu
+  
+  // =================================================================
+  // == ĐÂY LÀ PHẦN THAY ĐỔI LOGIC ĐỂ GẮN THÊM THÔNG TIN XE (VEHICLE) ==
+  // =================================================================
   const variantsInRequest = (request?.items || []).map(item => {
     // Duyệt qua mảng vehicles để tìm cả vehicle và variant tương ứng
     const matchingVehicle = vehicles.find(vehicle =>
@@ -101,6 +112,7 @@ export default function ManufacturerDealerRequestDetail() {
     // item.variant hiện tại sẽ là đối tượng variant có thêm trường 'vehicle'
     return { ...item, variant: v };
   });
+
   // Tổng số lượng
   const totalQuantity = variantsInRequest.reduce(
     (sum, item) => sum + (item.requested_quantity ?? 0),
@@ -269,6 +281,8 @@ export default function ManufacturerDealerRequestDetail() {
                 <div key={idx} className="border-b last:border-b-0 pb-4 last:pb-0">
                   <p className="text-sm text-gray-500">Dòng xe</p>
                   <p className="font-bold text-gray-900 text-lg">
+                    {/* BÂY GIỜ BẠN CÓ THỂ TRUY CẬP TRƯỜNG NÀY 
+                    */}
                     {item.variant?.vehicle?.model_name || "N/A"}
                   </p>
 
