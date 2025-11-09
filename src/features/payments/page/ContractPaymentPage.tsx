@@ -14,7 +14,7 @@ export default function ContractPaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [contract, setContract] = useState<IContract>(null);
+  const [contract, setContract] = useState<IContract>();
   const [amount, setAmount] = useState<number>(0);
   const [paymentType, setPaymentType] = useState<string>("Đặt cọc");
   const [paymentMethod, setPaymentMethod] = useState<string>("CREDIT_CARD");

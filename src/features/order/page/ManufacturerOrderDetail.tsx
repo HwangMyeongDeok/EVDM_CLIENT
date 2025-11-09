@@ -112,9 +112,6 @@ export default function ManufacturerDealerRequestDetail() {
     // item.variant hiện tại sẽ là đối tượng variant có thêm trường 'vehicle'
     return { ...item, variant: v };
   });
-  // ===================== KẾT THÚC PHẦN THAY ĐỔI =====================
-
-  console.log(variantsInRequest);
 
   // Tổng số lượng
   const totalQuantity = variantsInRequest.reduce(
