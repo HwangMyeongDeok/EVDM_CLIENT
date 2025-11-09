@@ -80,13 +80,27 @@ export default function ManufacturerDealerRequestDetail() {
   console.log(requests)
   // Tạo danh sách tất cả variant trong yêu cầu
   const variantsInRequest = (request?.items || []).map(item => {
-  const v = vehicles
-    .flatMap(vehicle => vehicle.variants)
-    .find(variant => variant?.variant_id && variant.variant_id.toString() === item.variant_id?.toString());
-  return { ...item, variant: v };
-});
-  console.log(variantsInRequest);
-
+    // Duyệt qua mảng vehicles để tìm cả vehicle và variant tương ứng
+    const matchingVehicle = vehicles.find(vehicle =>
+      vehicle.variants.some(variant =>
+        variant?.variant_id && variant.variant_id.toString() === item.variant_id?.toString()
+      )
+    );
+  
+    let v = null;
+    if (matchingVehicle) {
+      // Lấy variant cụ thể từ vehicle
+      const foundVariant = matchingVehicle.variants.find(
+        (variant) => variant?.variant_id && variant.variant_id.toString() === item.variant_id?.toString()
+      );
+      // Gắn thông tin vehicle vào variant để có thể truy cập qua item.variant.vehicle.model_name
+      // Giả sử IVehicleVariant của bạn đã được cập nhật để chấp nhận trường 'vehicle' (xem lưu ý ở đầu file)
+      v = { ...foundVariant, vehicle: matchingVehicle };
+    }
+  
+    // item.variant hiện tại sẽ là đối tượng variant có thêm trường 'vehicle'
+    return { ...item, variant: v };
+  });
   // Tổng số lượng
   const totalQuantity = variantsInRequest.reduce(
     (sum, item) => sum + (item.requested_quantity ?? 0),
