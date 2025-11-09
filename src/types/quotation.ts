@@ -1,4 +1,3 @@
-import type { QuotationStatus } from "@/types/enums";
 
 export interface IQuotationItem {
   item_id: number;
@@ -16,7 +15,6 @@ export interface IQuotation {
   quotation_number: string;
   customer_id: string;
   dealer_id: string;
-  status: QuotationStatus;
   subtotal: number;
   tax_rate: number;
   tax_amount: number;

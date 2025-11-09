@@ -1,6 +1,5 @@
 import type { RequestStatus } from "@/types/enums";
 
-
 export interface DealerVehicleRequest {
   request_id: string;
   dealer_id: string;
