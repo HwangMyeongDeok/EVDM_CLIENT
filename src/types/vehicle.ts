@@ -15,6 +15,7 @@ export interface IVehicleVariant {
   color: string;
   dealer_price: number;
   base_price: number;
+  vehicle?: IVehicle;
   retail_price: number;
   discount_percent: number;
   model_year: number;
@@ -39,4 +40,4 @@ export interface IVehicle {
   description?: string;
   image_urls?: string[] | null;
   variants: IVehicleVariant[];
-}
+} 
