@@ -1,55 +1,101 @@
-import { createApi } from '@reduxjs/toolkit/query/react';
-import type { DealerVehicleAllocation } from '@/types/dealer_vehicle_allocation';
-import { axiosBaseQuery } from '@/lib/axiosBaseQuery';
+import { createApi } from "@reduxjs/toolkit/query/react";
+import type { DealerVehicleAllocation } from "@/types/dealer_vehicle_allocation";
+import { axiosBaseQuery } from "@/lib/axiosBaseQuery";
 
 export const dealerVehicleAllocationApi = createApi({
-  reducerPath: 'dealerVehicleAllocationApi',
+  reducerPath: "dealerVehicleAllocationApi",
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['DealerVehicleAllocation'],
+  // 1. Định nghĩa 'tagTypes'
+  tagTypes: ["DealerVehicleAllocation"],
   keepUnusedDataFor: 60,
+
   endpoints: (builder) => ({
-    getDealerVehicleAllocations: builder.query<DealerVehicleAllocation[], { request_id?: string }>({
-      query: (params) => ({ url: '/dealer-allocations', params }),
-      transformResponse: (response: { success: boolean; count: number; data: DealerVehicleAllocation[] }) => response.data,
-      providesTags: ['DealerVehicleAllocation'],
-    }),
-    getDealerVehicleAllocationById: builder.query<DealerVehicleAllocation, string>({
-      query: (id) => ({ url: `/dealer-allocations/${id}` }),
-      transformResponse: (response: { success: boolean; data: DealerVehicleAllocation }) => response.data,
-      providesTags: (_result, _error, id) => [{ type: 'DealerVehicleAllocation', id }],
-    }),
-    createDealerVehicleAllocation: builder.mutation<DealerVehicleAllocation, Partial<DealerVehicleAllocation>>({
-      query: (body) => ({
-        url: '/dealer-allocations',
-        method: 'POST',
-        body,
+    // 🟢 Lấy danh sách allocation theo request_id
+    getDealerAllocations: builder.query<
+      { success: boolean; data: DealerVehicleAllocation[] },
+      { request_id?: number }
+    >({
+      query: (params) => ({
+        url: "/dealer-allocations", // Sẽ gọi: /dealer-allocations?request_id=26
+        params,
       }),
-      transformResponse: (response: { success: boolean; data: DealerVehicleAllocation }) => response.data,
-      invalidatesTags: ['DealerVehicleAllocation'],
+      // 2. Cung cấp tag 'LIST' (cho cả danh sách) và 'ID' (cho từng mục)
+      providesTags: (result) =>
+        result?.data
+          ? [
+              ...result.data.map(({ allocation_id }) => ({
+                type: "DealerVehicleAllocation" as const,
+                id: allocation_id,
+              })),
+              { type: "DealerVehicleAllocation", id: "LIST" },
+            ]
+          : [{ type: "DealerVehicleAllocation", id: "LIST" }],
     }),
-    updateDealerVehicleAllocation: builder.mutation<DealerVehicleAllocation, { id: string; body: Partial<DealerVehicleAllocation> }>({
-      query: ({ id, body }) => ({
-        url: `/dealer-allocations/${id}`,
-        method: 'PATCH',
-        body,
-      }),
-      transformResponse: (response: { success: boolean; data: DealerVehicleAllocation }) => response.data,
-      invalidatesTags: (_result, _error, { id }) => [{ type: 'DealerVehicleAllocation', id }],
-    }),
-    deleteDealerVehicleAllocation: builder.mutation<{ success: boolean; id: string }, string>({
+
+    // 🟢 Lấy chi tiết 1 allocation
+    getDealerAllocationById: builder.query<
+      { success: boolean; data: DealerVehicleAllocation },
+      number
+    >({
       query: (id) => ({
         url: `/dealer-allocations/${id}`,
-        method: 'DELETE',
       }),
-      invalidatesTags: (_result, _error, id) => [{ type: 'DealerVehicleAllocation', id }],
+      providesTags: (_result, _error, id) => [
+        { type: "DealerVehicleAllocation", id },
+      ],
+    }),
+
+    // 🟢 Tạo mới allocation
+    createDealerAllocation: builder.mutation<
+      // ... (các kiểu dữ liệu giữ nguyên)
+      any, any
+    >({
+      query: (body) => ({
+        url: "/dealer-allocations",
+        method: "POST",
+        body,
+      }),
+      // 3. Vô hiệu hóa tag 'LIST' -> tự động gọi lại 'getDealerAllocations'
+      invalidatesTags: [{ type: "DealerVehicleAllocation", id: "LIST" }],
+    }),
+
+    // 🟢 Cập nhật allocation
+    updateDealerAllocation: builder.mutation<
+      // ... (các kiểu dữ liệu giữ nguyên)
+      any, { id: number; body: any }
+    >({
+      query: ({ id, body }) => ({
+        url: `/dealer-allocations/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      // 4. Vô hiệu hóa tag 'ID' -> tự động gọi lại 'getDealerAllocations'
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "DealerVehicleAllocation", id },
+      ],
+    }),
+
+    // 🟢 Xóa allocation
+    deleteDealerAllocation: builder.mutation<
+      // ... (các kiểu dữ liệu giữ nguyên)
+      any, number
+    >({
+      query: (id) => ({
+        url: `/dealer-allocations/${id}`,
+        method: "DELETE",
+      }),
+      // 5. Vô hiệu hóa tag 'ID' -> tự động gọi lại 'getDealerAllocations'
+      invalidatesTags: (_result, _error, id) => [
+        { type: "DealerVehicleAllocation", id },
+      ],
     }),
   }),
 });
 
 export const {
-  useGetDealerVehicleAllocationsQuery,
-  useGetDealerVehicleAllocationByIdQuery,
-  useCreateDealerVehicleAllocationMutation,
-  useUpdateDealerVehicleAllocationMutation,
-  useDeleteDealerVehicleAllocationMutation,
+  useGetDealerAllocationsQuery,
+  useGetDealerAllocationByIdQuery,
+  useCreateDealerAllocationMutation,
+  useUpdateDealerAllocationMutation,
+  useDeleteDealerAllocationMutation,
 } = dealerVehicleAllocationApi;

@@ -12,183 +12,273 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Loader2,
-  ArrowLeft,
-  Save,
-  Edit,
-  Trash,
-} from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
+import { Loader2, ArrowLeft, Save, Edit, Trash } from "lucide-react";
+import { toast } from "sonner";
 
+// --- THAY ĐỔI 1: Thêm lại 'useGetDealerAllocationsQuery' ---
 import {
-  useGetDealerVehicleAllocationsQuery,
-  useCreateDealerVehicleAllocationMutation,
-  useUpdateDealerVehicleAllocationMutation,
-  useDeleteDealerVehicleAllocationMutation,
-} from "@/features/allocation/api"; 
-import { useGetVehiclesQuery } from "@/features/vehicles/api";
-import type { DealerVehicleAllocation } from "@/types/dealer_vehicle_allocation";
+  useGetDealerAllocationsQuery, // <-- Thêm lại hook này
+  useCreateDealerAllocationMutation,
+  useUpdateDealerAllocationMutation,
+  useDeleteDealerAllocationMutation,
+} from "@/features/allocation/api";
+
 import { useGetDealerRequestByIdQuery } from "@/features/order/api";
+
+import type {
+  DealerVehicleAllocation,
+} from "@/types/dealer_vehicle_allocation";
 import type { IVehicleVariant } from "@/types/vehicle";
+import type { Items } from "@/types/dealer_vehicle_request";
 
 export default function ManufacturerDeliveryBatchCreatePage() {
   const { request_id } = useParams<{ request_id: string }>();
   const navigate = useNavigate();
 
-  // --- Fetch request ---
-  const { data: request, isLoading: isLoadingRequest, isError: isErrorRequest } =
-    useGetDealerRequestByIdQuery(request_id ?? "");
+  // --- API 1: Fetch request (Hợp đồng) ---
+  const { 
+    data: request, 
+    isLoading: isLoadingRequest,
+    // Không cần 'refetch' nữa
+  } = useGetDealerRequestByIdQuery(request_id ?? "");
 
-  // --- Fetch allocations ---
+  // --- THAY ĐỔI 2: Thêm lại API 2 (Lấy đợt giao) ---
   const {
-    data: allocations = [],
-    isLoading: isLoadingAllocations,
-    refetch: refetchAllocations,
-    isError: isErrorAllocations,
-  } = useGetDealerVehicleAllocationsQuery({ request_id: request_id ?? undefined });
+    data: allocationResponse,
+    isLoading: isLoadingAllocations, // Thêm lại 'isLoading'
+  } = useGetDealerAllocationsQuery({
+    request_id: request_id ? Number(request_id) : undefined,
+  });
 
-  // --- Fetch vehicles ---
-  const { data: vehicles = [] } = useGetVehiclesQuery();
+  // --- THAY ĐỔI 3: Lấy 'allocations' từ API 2 ---
+  const allocations: DealerVehicleAllocation[] = allocationResponse?.data ?? [];
 
-  // --- Mutation hooks ---
-  const [addAllocation, { isLoading: isAdding }] = useCreateDealerVehicleAllocationMutation();
-  const [updateAllocation, { isLoading: isUpdating }] = useUpdateDealerVehicleAllocationMutation();
-  const [deleteAllocation, { isLoading: isDeleting }] = useDeleteDealerVehicleAllocationMutation();
+  // --- Mutations (Giữ nguyên) ---
+  const [addAllocation, { isLoading: isAdding }] = useCreateDealerAllocationMutation();
+  const [updateAllocation, { isLoading: isUpdating }] = useUpdateDealerAllocationMutation();
+  const [deleteAllocation] = useDeleteDealerAllocationMutation();
 
-  // --- Local state ---
+  // --- State (Giữ nguyên) ---
+  const [selectedVariantId, setSelectedVariantId] = useState<string>("");
   const [newAllocatedQuantity, setNewAllocatedQuantity] = useState<number>(0);
-  const [newDeliveryBatch, setNewDeliveryBatch] = useState<string>("");
+  const [newDeliveryBatch, setNewDeliveryBatch] = useState<string>("1");
   const [newDeliveryDate, setNewDeliveryDate] = useState<string>("");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
-  // --- Map variant_id -> variant object ---
+  // --- Lấy 'vehicles' từ 'request' (Đã sửa lỗi type/race condition) ---
+  const vehicles: IVehicleVariant[] =
+    (request?.items
+      ?.map((item: Items) => item.variant) as (IVehicleVariant | undefined)[])
+      ?.filter((v): v is IVehicleVariant => v !== undefined) 
+    ?? [];
+
+  // --- Map (Giữ nguyên) ---
   const variantMap = new Map<string, IVehicleVariant>();
   vehicles.forEach((v) =>
-    v.variants.forEach((variant) =>
-      variantMap.set(variant.variant_id.toString(), variant)
-    )
+    variantMap.set(v.variant_id.toString(), v)
   );
-  const variant = request ? variantMap.get(request.variant_id.toString()) : null;
 
-  // --- Tổng số lượng đã giao ---
-  const totalAllocated = allocations.reduce((sum, alloc) => sum + alloc.allocated_quantity, 0);
+  // --- useEffect (Giữ nguyên) ---
+  useEffect(() => {
+    if (vehicles.length && !selectedVariantId) {
+      setSelectedVariantId(vehicles[0].variant_id.toString());
+    }
+  }, [vehicles, selectedVariantId]);
 
-  // --- Số lượng còn lại ---
-  const remainingQuantity = (request?.requested_quantity ?? 0) - totalAllocated;
+  // --- Filter allocations (Giữ nguyên) ---
+  const filteredAllocations = allocations.filter((a) =>
+    a.items.some((item) => item.variant_id.toString() === selectedVariantId)
+  );
 
-  // --- Thêm/sửa allocation ---
+  // --- Tính toán (Giữ nguyên) ---
+  const totalAllocated = filteredAllocations.reduce((sum, alloc) => {
+    const item = alloc.items.find((i) => i.variant_id.toString() === selectedVariantId);
+    return sum + (item?.quantity ?? 0);
+  }, 0);
+
+  const currentItem = request?.items?.find((i: Items) => i.variant_id.toString() === selectedVariantId);
+  const remainingQuantity = (currentItem?.requested_quantity ?? 0) - totalAllocated;
+
+  // --- Auto tăng batch (Giữ nguyên) ---
+  useEffect(() => {
+    if (filteredAllocations.length > 0) {
+      const maxBatch = Math.max(
+        ...filteredAllocations.map((a) => Number(a.delivery_batch) || 0),
+        0
+      );
+      setNewDeliveryBatch((maxBatch + 1).toString());
+    } else {
+      setNewDeliveryBatch("1");
+    }
+  }, [filteredAllocations]);
+
+  // --- Thêm/sửa allocation (Giữ nguyên logic) ---
   const handleSaveAllocation = async () => {
+    // (Giữ nguyên logic kiểm tra và tính 'remaining')
+    if (!selectedVariantId) {
+      toast.error("Vui lòng chọn xe cần giao!");
+      return;
+    }
     if (newAllocatedQuantity <= 0 || !newDeliveryDate) {
-      alert("Vui lòng nhập số lượng giao và ngày giao hợp lệ!");
+      toast.warning("Vui lòng nhập số lượng và ngày giao hợp lệ!");
       return;
     }
-
-    const remaining =
-      (request?.requested_quantity ?? 0) -
-      totalAllocated +
-      (editingId
-        ? allocations.find((a) => a.allocation_id === editingId)?.allocated_quantity ?? 0
-        : 0);
-
+    let remaining = (currentItem?.requested_quantity ?? 0) - totalAllocated;
+    if (editingId) {
+      const allocToEdit = filteredAllocations.find(
+        (a) => Number(a.allocation_id) === editingId
+      );
+      const itemToEdit = allocToEdit?.items.find(
+        (i) => i.variant_id.toString() === selectedVariantId
+      );
+      if (itemToEdit) {
+        remaining += itemToEdit.quantity;
+      }
+    }
     if (newAllocatedQuantity > remaining) {
-      alert("Số lượng giao vượt quá số lượng còn lại!");
+      toast.error("Số lượng giao vượt quá số lượng còn lại!");
       return;
     }
 
-    const allocationData: Partial<DealerVehicleAllocation> = {
-      request_id,
-      dealer_id: request?.dealer_id ?? "",
-      variant_id: request?.variant_id ?? "",
-      allocated_quantity: newAllocatedQuantity,
-      delivery_batch: newDeliveryBatch,
-      delivery_date: newDeliveryDate,
-    };
-
+    // (Giữ nguyên logic try/catch)
     try {
       if (editingId) {
-        await updateAllocation({ id: editingId, body: allocationData }).unwrap();
-        alert("Đã cập nhật đợt giao hàng!");
+        // (Logic Sửa)
+        const allocToEdit = filteredAllocations.find(
+          (a) => Number(a.allocation_id) === editingId
+        );
+        if (!allocToEdit) throw new Error("Allocation không tồn tại!");
+        const updatedItems = allocToEdit.items.map((item) => ({
+          item_id: item.item_id,
+          variant_id: item.variant_id,
+          quantity:
+            item.variant_id.toString() === selectedVariantId
+              ? newAllocatedQuantity
+              : item.quantity,
+        }));
+        await updateAllocation({
+          id: editingId,
+          body: {
+            delivery_batch: newDeliveryBatch,
+            delivery_date: newDeliveryDate,
+            items: updatedItems,
+          },
+        }).unwrap();
+        toast.success("✅ Cập nhật đợt giao hàng thành công!");
       } else {
-        await addAllocation(allocationData).unwrap();
-        alert("Đã thêm đợt giao hàng mới!");
+        // (Logic Thêm)
+        await addAllocation({
+          request_id: Number(request_id),
+          dealer_id: Number(request?.dealer_id ?? 0),
+          delivery_batch: Number(newDeliveryBatch),
+          delivery_date: newDeliveryDate,
+          items: [
+            {
+              variant_id: Number(selectedVariantId),
+              quantity: newAllocatedQuantity,
+            },
+          ],
+        }).unwrap();
+        toast.success("🚚 Thêm đợt giao hàng thành công!");
       }
-
-      // Reset input
       setNewAllocatedQuantity(0);
-      setNewDeliveryBatch("");
       setNewDeliveryDate("");
       setEditingId(null);
-
-      // Refetch allocations
-      refetchAllocations();
+      
+      // --- THAY ĐỔI 4: Xóa 'refetchRequest()' ---
+      // refetchRequest(); // <-- KHÔNG CẦN NỮA
+      
     } catch (err) {
       console.error(err);
-      alert("Có lỗi xảy ra!");
+      toast.error("❌ Có lỗi xảy ra khi lưu đợt giao hàng! (Kiểm tra lỗi 400 BE)");
     }
   };
 
-  // --- Chỉnh sửa allocation ---
+  // --- Sửa (Giữ nguyên) ---
   const handleEditAllocation = (allocation: DealerVehicleAllocation) => {
-    setNewAllocatedQuantity(allocation.allocated_quantity);
-    setNewDeliveryBatch(allocation.delivery_batch ?? "");
-    setNewDeliveryDate(allocation.delivery_date ?? "");
-    setEditingId(allocation.allocation_id ?? null);
+    // (Logic giữ nguyên)
+    const item = allocation.items.find(
+      (i) => i.variant_id.toString() === selectedVariantId
+    );
+    if (!item) return;
+    setNewAllocatedQuantity(item.quantity);
+    setNewDeliveryBatch(allocation.delivery_batch?.toString() ?? "1");
+    setNewDeliveryDate(
+      allocation.delivery_date
+        ? new Date(allocation.delivery_date).toISOString().split("T")[0]
+        : ""
+    );
+    setEditingId(Number(allocation.allocation_id) ?? null);
+    setSelectedVariantId(item.variant_id.toString());
   };
 
-  // --- Xóa allocation ---
-  const handleDeleteAllocation = async (allocation_id: string) => {
+  // --- Xóa (Giữ nguyên) ---
+  const handleDeleteAllocation = async (allocation_id: number) => {
     try {
       await deleteAllocation(allocation_id).unwrap();
-      alert("Đã xóa đợt giao hàng!");
-      refetchAllocations();
+      toast.success("🗑️ Đã xóa đợt giao hàng!");
+      
+      // --- THAY ĐỔI 5: Xóa 'refetchRequest()' ---
+      // refetchRequest(); // <-- KHÔNG CẦN NỮA
+      
     } catch (err) {
       console.error(err);
-      alert("Có lỗi xảy ra khi xóa!");
+      toast.error("❌ Có lỗi xảy ra khi xóa!");
     }
   };
 
-  // --- Loading / Error ---
-  if (isLoadingRequest || isLoadingAllocations)
+  // --- Loading / Error (Sửa lại) ---
+  // --- THAY ĐỔI 6: Thêm lại 'isLoadingAllocations' ---
+  if (isLoadingRequest || isLoadingAllocations) 
     return (
       <div className="p-8 flex items-center justify-center min-h-[300px]">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="ml-3 text-lg text-gray-600">Đang tải dữ liệu...</p>
       </div>
     );
-
-  if (isErrorRequest || isErrorAllocations || !request)
+  if (!request)
     return (
-      <div className="p-8 text-center">
-        <p className="text-lg text-red-600">
-          Không tìm thấy đơn hàng hoặc lỗi tải dữ liệu!
-        </p>
+      <div className="p-8 text-center text-red-600">
+        Không tìm thấy đơn hàng hoặc lỗi tải dữ liệu!
       </div>
     );
 
+  // --- JSX (Giữ nguyên) ---
   return (
     <div className="p-6 md:p-8 lg:p-10">
       <Button variant="outline" onClick={() => navigate(-1)} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Quay lại
       </Button>
-
       <Card className="shadow-lg border-gray-200">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Tạo đợt giao hàng</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            Tạo đợt giao hàng cho từng xe
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Thông tin read-only */}
+           {/* --- Chọn xe --- */}
+           <div className="mb-6">
+            <Label>Chọn xe cần giao:</Label>
+            <select
+              className="w-full border p-2 rounded-md"
+              value={selectedVariantId}
+              onChange={(e) => setSelectedVariantId(e.target.value)}
+            >
+              {vehicles.map((variant) => {
+                 const item = request.items.find(i => Number(i.variant_id) === variant.variant_id);
+                 const requestedQty = item?.requested_quantity ?? 0;
+                return (
+                  <option key={variant.variant_id} value={variant.variant_id}>
+                    {variant?.version ?? "Không rõ"} - {variant?.color ?? "Không rõ"}{" "}
+                    (SL: {requestedQty})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          
+          {/* --- Thông tin tổng --- */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div>
               <Label>ID Đơn hàng</Label>
@@ -199,59 +289,51 @@ export default function ManufacturerDeliveryBatchCreatePage() {
               <Input value={request.dealer?.dealer_name ?? ""} readOnly />
             </div>
             <div>
-              <Label>Phiên bản</Label>
-              <Input value={variant?.version ?? "N/A"} readOnly />
+              <Label>Tổng SL đặt xe này</Label>
+              <Input value={currentItem?.requested_quantity ?? 0} readOnly />
             </div>
             <div>
-              <Label>Mẫu xe</Label>
-              <Input value={variant?.color ?? "N/A"} readOnly />
-            </div>
-            <div>
-              <Label>Tổng số lượng đặt</Label>
-              <Input value={request.requested_quantity} readOnly />
-            </div>
-            <div>
-              <Label>Số lượng đã giao</Label>
+              <Label>SL đã giao</Label>
               <Input value={totalAllocated} readOnly />
             </div>
             <div>
-              <Label>Số lượng còn lại</Label>
+              <Label>SL còn lại</Label>
               <Input value={remainingQuantity} readOnly />
             </div>
           </div>
-
-          {/* Form thêm/sửa */}
+          
+          {/* --- Form thêm/sửa --- */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div>
-              <Label htmlFor="delivery-date">Ngày giao (dự kiến)</Label>
+              <Label>Ngày giao (dự kiến)</Label>
               <Input
-                id="delivery-date"
                 type="date"
                 value={newDeliveryDate}
                 onChange={(e) => setNewDeliveryDate(e.target.value)}
               />
             </div>
             <div>
-              <Label htmlFor="allocated-quantity">Số lượng giao (đợt này)</Label>
+              <Label>Số lượng giao (đợt này)</Label>
               <Input
-                id="allocated-quantity"
                 type="number"
                 value={newAllocatedQuantity}
-                onChange={(e) => setNewAllocatedQuantity(parseInt(e.target.value) || 0)}
+                onChange={(e) =>
+                  setNewAllocatedQuantity(parseInt(e.target.value) || 0)
+                }
               />
             </div>
             <div>
-              <Label htmlFor="delivery-batch">Batch (Lô hàng) (tùy chọn)</Label>
-              <Input
-                id="delivery-batch"
-                value={newDeliveryBatch}
-                onChange={(e) => setNewDeliveryBatch(e.target.value)}
-              />
+              <Label>Batch (Lô hàng)</Label>
+              <Input value={newDeliveryBatch} readOnly />
             </div>
           </div>
-
+          
+          {/* --- Nút bấm --- */}
           <div className="flex justify-end mb-8">
-            <Button onClick={handleSaveAllocation} disabled={isAdding || isUpdating}>
+            <Button
+              onClick={handleSaveAllocation}
+              disabled={isAdding || isUpdating}
+            >
               <Save className="h-4 w-4 mr-2" />
               {editingId ? "Cập nhật" : "Thêm đợt giao"}
             </Button>
@@ -261,7 +343,6 @@ export default function ManufacturerDeliveryBatchCreatePage() {
                 className="ml-2"
                 onClick={() => {
                   setNewAllocatedQuantity(0);
-                  setNewDeliveryBatch("");
                   setNewDeliveryDate("");
                   setEditingId(null);
                 }}
@@ -270,78 +351,86 @@ export default function ManufacturerDeliveryBatchCreatePage() {
               </Button>
             )}
           </div>
-
-          {/* Table allocations */}
+          
+          {/* --- Table allocations --- */}
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-gray-50">
                 <TableRow>
-                  <TableHead>ID Allocation</TableHead>
-                  <TableHead>Đại lý</TableHead>
-                  <TableHead>ID Phiên bản</TableHead>
-                  <TableHead>Số lượng</TableHead>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Xe</TableHead>
+                  <TableHead>Tổng số lượng</TableHead>
                   <TableHead>Batch</TableHead>
                   <TableHead>Ngày giao</TableHead>
-                  <TableHead>Ngày allocation</TableHead>
+                  <TableHead>Ngày tạo</TableHead>
                   <TableHead className="text-center">Hành động</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {allocations.length > 0 ? (
-                  allocations.map((allocation: DealerVehicleAllocation) => (
+                {filteredAllocations.length > 0 ? (
+                  filteredAllocations.map((allocation) => (
                     <TableRow key={allocation.allocation_id}>
                       <TableCell>{allocation.allocation_id}</TableCell>
-                      <TableCell>{allocation.dealer?.dealer_name}</TableCell>
-                      <TableCell>{allocation.variant_id}</TableCell>
-                      <TableCell>{allocation.allocated_quantity}</TableCell>
-                      <TableCell>{allocation.delivery_batch}</TableCell>
-                      <TableCell>{allocation.delivery_date ?? "N/A"}</TableCell>
-                      <TableCell>{allocation.allocation_date ?? "N/A"}</TableCell>
+                      <TableCell>
+                        {allocation.items
+                          .map((i) => {
+                            const variant = variantMap.get(
+                              i.variant_id.toString()
+                            );
+                            return `${variant?.version ?? "N/A"} - ${
+                              variant?.color ?? ""
+                            } (SL: ${i.quantity})`;
+                          })
+                          .join(", ")}
+                      </TableCell>
+                      <TableCell>
+                        {allocation.items.reduce(
+                          (sum, i) => sum + i.quantity,
+                          0
+                        )}
+                      </TableCell>
+                      <TableCell>{allocation.delivery_batch ?? "N/A"}</TableCell>
+                      <TableCell>
+                        {allocation.delivery_date
+                          ? new Date(allocation.delivery_date).toLocaleDateString(
+                              "vi-VN"
+                            )
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        {allocation.allocation_date
+                          ? new Date(
+                              allocation.allocation_date
+                            ).toLocaleDateString("vi-VN")
+                          : "N/A"}
+                      </TableCell>
                       <TableCell className="text-center space-x-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditAllocation(allocation)}
-                          disabled={isUpdating || isDeleting}
+                          disabled={!allocation.items.some(i => i.variant_id.toString() === selectedVariantId)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              disabled={isUpdating || isDeleting}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Bạn có chắc chắn muốn xóa đợt giao này?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Hủy</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() =>
-                                  handleDeleteAllocation(allocation.allocation_id!)
-                                }
-                              >
-                                Xóa
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() =>
+                            handleDeleteAllocation(
+                              Number(allocation.allocation_id!)
+                            )
+                          }
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center">
-                      Chưa có đợt giao hàng nào.
+                    <TableCell colSpan={7} className="text-center">
+                      Chưa có đợt giao hàng nào cho xe này.
                     </TableCell>
                   </TableRow>
                 )}

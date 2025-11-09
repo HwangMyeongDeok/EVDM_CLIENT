@@ -28,4 +28,12 @@ export interface DealerVehicleAllocation {
   updated_at?: string;
   dealer: Dealer;                 
   variant?: Variant;               
+  items: DealerVehicleAllocationItem[];
+}
+export interface DealerVehicleAllocationItem {
+  item_id?: string;       
+  allocation_id?: string; 
+  variant_id: string;     
+  quantity: number;     
+  variant?: Variant;      
 }
