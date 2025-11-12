@@ -94,7 +94,7 @@ export default function EvmDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClipboardCheck className="h-5 w-5 text-primary" />
-              Đơn Hàng (PO) Chờ Duyệt (Luồng 2)
+              Đơn Hàng (PO) Chờ Duyệt 
             </CardTitle>
           </CardHeader>
           <CardContent>

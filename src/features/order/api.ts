@@ -32,7 +32,6 @@ export const dealerRequestApi = createApi({
     getDealerRequestById: builder.query<DealerVehicleRequest, string>({
       query: (id) => ({ url: `/dealer-requests/${id}`, method: "GET" }),
       transformResponse: (response: any) => {
-        console.log("🔍 DealerRequestById response:", response);
         if (response?.data) return response.data; // dạng { success, data }
         return response; // dạng object trực tiếp
       },
@@ -81,15 +80,8 @@ export const dealerRequestApi = createApi({
         invalidatesTags: [{ type: "DealerRequest", id: "LIST" }],
       }
     ),
-    getManufacturerRequests: builder.query<DealerVehicleRequest[], void>({
-      query: () => ({
-        url: "/dealer-requests/manufacturer",
-        method: "GET",
-      }),
-      transformResponse: (res: any) => res.data ?? [],
-    }),
-  }),
 
+  }),
 });
 
 export const {
@@ -98,5 +90,4 @@ export const {
   useCreateDealerRequestMutation,
   useUpdateDealerRequestStatusMutation,
   useDeleteDealerRequestMutation,
-  useGetManufacturerRequestsQuery,
 } = dealerRequestApi;

@@ -87,9 +87,6 @@ export default function ManufacturerDealerRequestDetail() {
   const request = requests.find((r) => String(r.request_id) === id);
   console.log(requests)
   
-  // =================================================================
-  // == ĐÂY LÀ PHẦN THAY ĐỔI LOGIC ĐỂ GẮN THÊM THÔNG TIN XE (VEHICLE) ==
-  // =================================================================
   const variantsInRequest = (request?.items || []).map(item => {
     // Duyệt qua mảng vehicles để tìm cả vehicle và variant tương ứng
     const matchingVehicle = vehicles.find(vehicle =>
@@ -112,7 +109,6 @@ export default function ManufacturerDealerRequestDetail() {
     // item.variant hiện tại sẽ là đối tượng variant có thêm trường 'vehicle'
     return { ...item, variant: v };
   });
-  // ===================== KẾT THÚC PHẦN THAY ĐỔI =====================
 
   console.log(variantsInRequest);
 
