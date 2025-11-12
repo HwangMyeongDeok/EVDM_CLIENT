@@ -29,6 +29,7 @@ import ContractFromQuotationPage from "@/features/contract/page/ContractFromQuot
 import PaymentStatusPage from "@/features/payments/page/PaymentStatusPage";
 import PaymentCheckout from "@/features/payments/page/ContractPaymentPage";
 import AllocationTrackingPage from "@/features/allocation/page/AllocationTrackingPage";
+import DepositStatusPage from "@/features/allocation/page/DepositStatusPage";
 
 
 
@@ -97,6 +98,7 @@ export default function App() {
         </Route>
 
         <Route path="/dealer/manager/allocation-tracking" element={<AllocationTrackingPage />} />
+        <Route path="/dealer/manager/deposit-status" element={<DepositStatusPage />} />
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

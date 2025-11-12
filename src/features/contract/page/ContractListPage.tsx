@@ -130,6 +130,7 @@ export default function ContractListPage() {
     try {
       setLoading(true);
       const data = await ContractService.fetchContracts();
+      console.log("object",data);
       setContracts(data);
     } catch (error) {
       console.error("Error fetching contracts:", error);

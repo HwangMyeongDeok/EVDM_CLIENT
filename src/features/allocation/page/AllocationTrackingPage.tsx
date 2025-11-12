@@ -41,6 +41,7 @@ import type { Allocation, AllocationItem } from '@/types/dealer_vehicle_allocati
 import { AllocationStatus } from '@/types/dealer_vehicle_allocation';
 import instance from '@/lib/axios';
 import { toast } from 'sonner';
+import DepositPaymentButton from '@/features/allocation/page/DepositPaymentButton';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -63,6 +64,7 @@ const AllocationTrackingPage = () => {
         setLoading(true);
         try {
             const res = await instance.get('/dealer-allocations');
+            console.log("dsadasdsadsa", res.data.data);
             setAllocations(res.data.data || []);
         } catch (error) {
             toast.error('Lỗi tải danh sách lô hàng');
@@ -76,7 +78,6 @@ const AllocationTrackingPage = () => {
         setConfirmingId(allocationId);
         try {
             const res = await instance.patch(`/dealer-allocations/${allocationId}/confirm-receipt`);
-            // Update state trực tiếp
             setAllocations(prev =>
                 prev.map(a =>
                     a.allocation_id === allocationId
@@ -85,7 +86,7 @@ const AllocationTrackingPage = () => {
                 )
             );
             toast.success('Xác nhận nhận hàng thành công');
-            setOpenDialogId(null); // Đóng modal
+            setOpenDialogId(null);
         } catch (error) {
             toast.error('Lỗi xác nhận nhận hàng');
             console.error(error);
@@ -235,6 +236,13 @@ const AllocationTrackingPage = () => {
                             .filter(a => a.status === AllocationStatus.DELIVERED)
                             .reduce((sum, alloc) => sum + calculateTotalQuantity(alloc.items), 0);
 
+                        // Tính tổng 50% deposit đã thanh toán
+                        const requestTotalAmount = group[0].request.items.reduce((sum, item) => {
+                            return sum + item.requested_quantity * item.variant.retail_price;
+                        }, 0);
+                        const totalPaid = group.reduce((sum, a) => sum + (a.paid_amount || 0), 0);
+                        const isDepositPaid = totalPaid >= requestTotalAmount * 0.5;
+
                         return (
                             <Card key={requestKey} className="shadow-md hover:shadow-lg transition-shadow duration-300">
                                 <CardHeader className="pb-4">
@@ -352,7 +360,12 @@ const AllocationTrackingPage = () => {
                                                                 ) : (
                                                                     <Dialog open={openDialogId === allocation.allocation_id} onOpenChange={(val) => setOpenDialogId(val ? allocation.allocation_id : null)}>
                                                                         <DialogTrigger asChild>
-                                                                            <Button variant="default" className="min-w-[150px]" disabled={confirmingId === allocation.allocation_id}>
+                                                                            <Button
+                                                                                variant="default"
+                                                                                className="min-w-[150px]"
+                                                                                disabled={
+                                                                                    (allocation.status as AllocationStatus) === AllocationStatus.DELIVERED || confirmingId === allocation.allocation_id}
+                                                                            >
                                                                                 Xác nhận Đã nhận hàng
                                                                             </Button>
                                                                         </DialogTrigger>
@@ -360,15 +373,21 @@ const AllocationTrackingPage = () => {
                                                                             <DialogHeader>
                                                                                 <DialogTitle>Xác nhận nhận hàng</DialogTitle>
                                                                                 <DialogDescription>
-                                                                                    Bạn có chắc chắn muốn xác nhận đã nhận lô hàng #{allocation.allocation_id}?
+                                                                                    {!isDepositPaid
+                                                                                        ? "Chưa thanh toán cọc 50%, vui lòng thanh toán trước."
+                                                                                        : `Bạn có chắc chắn muốn xác nhận đã nhận lô hàng #${allocation.allocation_id}?`}
                                                                                 </DialogDescription>
                                                                             </DialogHeader>
-                                                                            <DialogFooter>
-                                                                                <Button variant="outline" onClick={() => setOpenDialogId(null)}>Hủy</Button>
-                                                                                <Button onClick={() => handleConfirm(allocation.allocation_id)} disabled={confirmingId === allocation.allocation_id}>
-                                                                                    {confirmingId === allocation.allocation_id ? 'Đang xử lý...' : 'Xác nhận'}
-                                                                                </Button>
+                                                                            <DialogFooter className="flex flex-col space-y-2">
+
+                                                                                {!isDepositPaid && (
+                                                                                    <DepositPaymentButton
+                                                                                        requestId={requestId!}
+                                                                                        depositAmount={requestTotalAmount * 0.5}
+                                                                                    />
+                                                                                )}
                                                                             </DialogFooter>
+
                                                                         </DialogContent>
                                                                     </Dialog>
                                                                 )}
