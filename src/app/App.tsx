@@ -7,7 +7,7 @@ import UnauthorizedPage from "@/features/misc/UnauthorizedPage";
 import AuthGuard from "@/features/auth/guards/AuthGuard";
 import PaymentFormPage from "@/features/dealer/staff/page/PaymentFormPage";
 
-import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage"; 
+import PaymentHistoryPage from "@/features/dealer/staff/page/PaymentHistoryPage";
 import ContractListPage from "@/features/contract/page/ContractListPage";
 import VehicleCatalog from "@/features/vehicles/page/VehicleCatalog";
 import PurchaseOrderForm from "@/features/order/page/PurchaseOrderForm";
@@ -25,13 +25,11 @@ import EvmDashboard from "@/features/evm-staff/Dashboard";
 import { EvmLayout } from "@/features/evm-staff/evm-layout";
 import ContractFromQuotationPage from "@/features/contract/page/ContractFromQuotationPage";
 
-
 import PaymentStatusPage from "@/features/payments/page/PaymentStatusPage";
 import PaymentCheckout from "@/features/payments/page/ContractPaymentPage";
 
-
-
-
+import UserManagementPage from "@/features/admin/page/UserManagementPage";
+import DealerManagementPage from "@/features/admin/page/DealerManagementPage";
 
 
 export default function App() {
@@ -43,13 +41,12 @@ export default function App() {
         <Route path="/404" element={<NotFoundPage />} />
         <Route path="/" element={<AuthGuard />} />
 
-
         <Route element={<RequireAuth allowedRoles={["DEALER_STAFF"]} />}>
-        <Route element={<DealerStaffLayout />}>
-          <Route
-            path="/dealer/staff/dashboard"
-            element={<DealerStaffDashboard />}
-          />
+          <Route element={<DealerStaffLayout />}>
+            <Route
+              path="/dealer/staff/dashboard"
+              element={<DealerStaffDashboard />}
+            />
 
             <Route
               path="/dealer/staff/PaymentFormPage"
@@ -60,41 +57,89 @@ export default function App() {
               element={<PaymentHistoryPage />}
             />
 
-            
-          <Route path="/dealer/staff/vehicles" element={<VehicleCatalog />} />
-          <Route path="/dealer/staff/vehicles/:id" element={<VehicleDetailPage />} />
-          <Route path="/dealer/staff/contracts" element={<ContractListPage />} />
-          <Route path="/dealer/staff/contracts/new" element={<ContractFromQuotationPage />} />
-          <Route path="/dealer/staff/contracts/edit/:id" element={<ContractFromQuotationPage />} />
+            <Route path="/dealer/staff/vehicles" element={<VehicleCatalog />} />
+            <Route
+              path="/dealer/staff/vehicles/:id"
+              element={<VehicleDetailPage />}
+            />
+            <Route
+              path="/dealer/staff/contracts"
+              element={<ContractListPage />}
+            />
+            <Route
+              path="/dealer/staff/contracts/new"
+              element={<ContractFromQuotationPage />}
+            />
+            <Route
+              path="/dealer/staff/contracts/edit/:id"
+              element={<ContractFromQuotationPage />}
+            />
 
-          <Route path="/dealer/staff/quotations" element={<QuotationListPage />} />
-          <Route path="/dealer/staff/quotations/new" element={<QuotationCreatePage />} />        
-          <Route path="/dealer/staff/quotations/create/:variantId" element={<QuotationCreatePage />} />
-          <Route path="/dealer/staff/quotations/edit/:id" element={<QuotationCreatePage />} />
-          <Route path="/dealer/staff/payment-test/:contractId?" element={<PaymentCheckout />} />
-          <Route path="/dealer/staff/payment-status" element={<PaymentStatusPage />} />
-
+            <Route
+              path="/dealer/staff/quotations"
+              element={<QuotationListPage />}
+            />
+            <Route
+              path="/dealer/staff/quotations/new"
+              element={<QuotationCreatePage />}
+            />
+            <Route
+              path="/dealer/staff/quotations/create/:variantId"
+              element={<QuotationCreatePage />}
+            />
+            <Route
+              path="/dealer/staff/quotations/edit/:id"
+              element={<QuotationCreatePage />}
+            />
+            <Route
+              path="/dealer/staff/payment-test/:contractId?"
+              element={<PaymentCheckout />}
+            />
+            <Route
+              path="/dealer/staff/payment-status"
+              element={<PaymentStatusPage />}
+            />
+          </Route>
         </Route>
+
+        <Route element={<RequireAuth allowedRoles={["DEALER_MANAGER"]} />}>
+          <Route element={<DealerManagerLayout />}>
+            <Route
+              path="/dealer/manager/dashboard"
+              element={<DealerStaffDashboard />}
+            />
+            <Route
+              path="/dealer/manager/purchase-orders/new"
+              element={<PurchaseOrderForm />}
+            />
+            <Route
+              path="/dealer/manager/purchase-orders/list"
+              element={<OrderRequestList />}
+            />
+          </Route>
         </Route>
 
-
-      <Route element={<RequireAuth allowedRoles={["DEALER_MANAGER"]} />}>
-        <Route element={<DealerManagerLayout />}>
-          <Route path="/dealer/manager/dashboard" element={<DealerStaffDashboard />} />
-          <Route path="/dealer/manager/purchase-orders/new" element={<PurchaseOrderForm />} />
-          <Route path="/dealer/manager/purchase-orders/list" element={<OrderRequestList />} />
-      </Route>
-      </Route>
-
-      <Route element={<RequireAuth allowedRoles={["EVM_STAFF"]} />}>
-        <Route element={<EvmLayout />}>
-          <Route path="/evm/dashboard" element={<EvmDashboard />} />
-          <Route path="/evm/orders" element={<ManufacturerOrderList />} />
-          <Route path="/evm/orders/:id" element={<ManufacturerOrderDetail />} />         
-          <Route path="/evm/delivery-batches/create/:request_id" element={<ManufacturerDeliveryCreate />} />
-      </Route>
-      </Route>
-
+        <Route element={<RequireAuth allowedRoles={["EVM_STAFF"]} />}>
+          <Route element={<EvmLayout />}>
+            <Route path="/evm/dashboard" element={<EvmDashboard />} />
+            <Route path="/evm/orders" element={<ManufacturerOrderList />} />
+            <Route
+              path="/evm/orders/:id"
+              element={<ManufacturerOrderDetail />}
+            />
+            <Route
+              path="/evm/delivery-batches/create/:request_id"
+              element={<ManufacturerDeliveryCreate />}
+            />
+          </Route>
+        </Route>
+    
+        <Route element={<RequireAuth allowedRoles={["ADMIN"]} />}>
+          <Route element={<DealerManagerLayout />}>
+            <Route path="/admin/user" element={<UserManagementPage />} />
+            <Route path="/admin/dealers" element={<DealerManagementPage />} />
+          </Route>
+        </Route>
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
