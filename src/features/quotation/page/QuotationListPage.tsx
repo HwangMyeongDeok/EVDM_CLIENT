@@ -1,324 +1,223 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  Card, CardContent, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Trash2, Plus, Pencil, Search, Loader2, FileText } from "lucide-react";
+import { RefreshCcw, Search, Eye, PlusCircle } from "lucide-react";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import instance from "@/lib/axios";
 import { toast } from "sonner";
-import {
-  getQuotations,
-  deleteQuotation,
-  type QuotationResponse,
-} from "../api";
+import { useAppSelector } from "@/hooks/redux";
+import { useNavigate } from "react-router-dom";
 
+type Customer = {
+  customer_id: number;
+  full_name: string;
+  phone: string;
+  email: string;
+  address: string;
+};
+
+type Dealer = {
+  dealer_id: number;
+  dealer_name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+};
+
+type User = {
+  user_id: number;
+  full_name: string;
+  email: string;
+  role: "ADMIN" | "DEALER_MANAGER" | "DEALER_STAFF";
+  dealer_id: number;
+};
+
+type Vehicle = {
+  vehicle_id: number;
+  model_name: string;
+  body_type: string;
+  doors: number;
+  seats: number;
+  image_urls: string[];
+  description?: string;
+  specifications?: string;
+  warranty_years?: number;
+  created_at: string;
+  updated_at?: string | null;
+};
+
+type Variant = {
+  variant_id: number;
+  color: string;
+  base_price: number;
+  retail_price: number;
+  dealer_price?: number;
+  motor_power_kw?: number;
+  battery_capacity_kwh?: number;
+  range_km?: number;
+  top_speed_kmh?: number;
+  charging_time_hours?: number;
+  model_year?: number;
+  status?: string;
+  version?: string;
+  vehicle: Vehicle;
+  created_at: string;
+  updated_at?: string | null;
+};
+
+export type Quotation = {
+  quotation_id: number;
+  quotation_number: string;
+  customer: Customer;
+  dealer: Dealer;
+  user: User;
+  variant: Variant;
+  subtotal: number;
+  discount_total: number;
+  discount_percent?: number;
+  tax_amount: number;
+  tax_rate: number;
+  total_amount: number;
+  notes?: string;
+  approved_by?: string | null;
+  status?: string;
+  created_at: string;
+  updated_at?: string | null;
+};
 
 export default function QuotationListPage() {
+  const { user } = useAppSelector((state) => state.auth);
+  const [quotations, setQuotations] = useState<Quotation[]>([]);
+  const [filtered, setFiltered] = useState<Quotation[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
-  const [quotations, setQuotations] = useState<QuotationResponse[]>([]);
-  const [filteredQuotations, setFilteredQuotations] = useState<QuotationResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [quotationToDelete, setQuotationToDelete] = useState<number | null>(null);
-  
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+
+  const fetchQuotations = async () => {
+    setLoading(true);
+    try {
+      const res = await instance.get("/quotations");
+      setQuotations(res.data.data);
+      console.log(res.data.data);
+      setFiltered(res.data.data);
+    } catch {
+      toast.error("Không tải được danh sách báo giá");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchQuotations();
   }, []);
 
   useEffect(() => {
-    filterQuotations();
-  }, [searchTerm, statusFilter, quotations]);
+    const s = search.trim().toLowerCase();
 
-  const fetchQuotations = async () => {
-    try {
-      setLoading(true);
-      const data = await getQuotations();
-      setQuotations(data);
-    } catch (error) {
-      console.error("Error fetching quotations:", error);
-      toast.error("Không thể tải danh sách báo giá");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterQuotations = () => {
-    let filtered = [...quotations];
-
-    if (searchTerm) {
-      filtered = filtered.filter((q) => {
-        const searchLower = searchTerm.toLowerCase();
-        return (
-          q.quotation_number.toLowerCase().includes(searchLower) ||
-          q.customer?.full_name.toLowerCase().includes(searchLower)
-        );
-      });
-    }
-
-
-    setFilteredQuotations(filtered);
-  };
-
-  const handleDeleteClick = (quotationId: number) => {
-    if (status !== "DRAFT") {
-      toast.error("Chỉ có thể xóa báo giá ở trạng thái Bản nháp");
+    if (!s) {
+      setFiltered(quotations);
       return;
     }
-    setQuotationToDelete(quotationId);
-    setDeleteDialogOpen(true);
+
+    setFiltered(
+      quotations.filter((q) => {
+        const quotationNumber = q.quotation_number?.toLowerCase() ?? "";
+        const customerName = q.customer?.full_name?.toLowerCase() ?? "";
+        const modelName = q.variant?.vehicle?.model_name?.toLowerCase() ?? "";
+
+        return (
+          quotationNumber.includes(s) ||
+          customerName.includes(s) ||
+          modelName.includes(s)
+        );
+      })
+    );
+  }, [search, quotations]);
+
+
+  const handleRefresh = async () => {
+    setSearch("");
+    await fetchQuotations();
+    toast.success("Làm mới thành công");
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!quotationToDelete) return;
-
-    try {
-      await deleteQuotation(quotationToDelete);
-      toast.success("Đã xóa báo giá thành công");
-      setDeleteDialogOpen(false);
-      setQuotationToDelete(null);
-      fetchQuotations();
-    } catch (error) {
-      console.error("Error deleting quotation:", error);
-      toast.error("Không thể xóa báo giá");
-    }
+  const handleCreateContract = (quotationId: number) => {
+    navigate(`/dealer/staff/contracts/new?quotationId=${quotationId}`);
   };
-
-  const formatCurrency = (amount: string | number) => {
-    const numAmount = typeof amount === "string" ? Number.parseFloat(amount) : amount;
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(numAmount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const getVehicleNames = (quotation: QuotationResponse) => {
-    if (!quotation.items || quotation.items.length === 0) return "N/A";
-    
-    const vehicleNames = quotation.items
-      .map((item) => item.variant?.version || "N/A")
-      .filter((name, index, self) => self.indexOf(name) === index)
-      .join(", ");
-    
-    return vehicleNames || "N/A";
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Danh sách Báo giá</h1>
-          <p className="text-muted-foreground">
-            Quản lý tất cả báo giá cho khách hàng
-          </p>
-        </div>
-        <Button onClick={() => navigate("/dealer/staff/quotations/new")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Tạo báo giá mới
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Bộ lọc</CardTitle>
-          <CardDescription>Tìm kiếm và lọc báo giá</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Tìm theo mã báo giá hoặc tên khách hàng..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                <SelectItem value="DRAFT">Bản nháp</SelectItem>
-                <SelectItem value="SENT">Đã gửi</SelectItem>
-                <SelectItem value="APPROVED">Đã duyệt</SelectItem>
-                <SelectItem value="REJECTED">Từ chối</SelectItem>
-              </SelectContent>
-            </Select>
+    <Card className="w-full mt-6">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-2xl">Danh sách báo giá</CardTitle>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Tìm mã BG, KH, xe..."
+              className="pl-8 w-64"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-        </CardContent>
-      </Card>
+          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={loading}>
+            <RefreshCcw className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
 
-      {/* Table */}
-      <Card>
-        <CardContent className="pt-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : filteredQuotations.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
-                {searchTerm || statusFilter !== "ALL"
-                  ? "Không tìm thấy báo giá nào"
-                  : "Chưa có báo giá nào"}
-              </p>
-              {!searchTerm && statusFilter === "ALL" && (
-                <Button
-                  onClick={() => navigate("/dealer/staff/quotations/new")}
-                  className="mt-4"
-                  variant="outline"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Tạo báo giá đầu tiên
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Mã báo giá</TableHead>
-                    <TableHead>Khách hàng</TableHead>
-                    <TableHead>Xe liên quan</TableHead>
-                    <TableHead className="text-right">Tổng giá</TableHead>
-                    <TableHead>Ngày tạo</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredQuotations.map((quotation) => (
-                    <TableRow key={quotation.quotation_id}>
-                      <TableCell className="font-medium">
-                        {quotation.quotation_number}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {quotation.customer?.full_name || "N/A"}
-                          </span>
-                          {quotation.customer?.phone && (
-                            <span className="text-xs text-muted-foreground">
-                              {quotation.customer.phone}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">
-                          {getVehicleNames(quotation)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(quotation.total_amount)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(quotation.created_at)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          {/* Convert to Contract button - only for non-DRAFT status */}
-                          
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => navigate(`/dealer/staff/contracts/new?quotationId=${quotation.quotation_id}`)}
-                              title="Chuyển sang hợp đồng"
-                            >
-                              <FileText className="h-4 w-4 mr-1" />
-                              Hợp đồng
-                            </Button>
-                          
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => navigate(`/dealer/staff/quotations/edit/${quotation.quotation_id}`)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button> 
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteClick(quotation.quotation_id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Mã BG</TableHead>
+              <TableHead>Khách hàng</TableHead>
+              <TableHead>Xe</TableHead>
+              <TableHead>Tổng tiền</TableHead>
+              {user!.role === "ADMIN" && <TableHead>Đại lý</TableHead>}
+              <TableHead>Ngày tạo</TableHead>
+              <TableHead>Hành động</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((q) => (
+              <TableRow key={q.quotation_id}>
+                <TableCell>{q.quotation_number}</TableCell>
+                <TableCell>{q.customer?.full_name}</TableCell>
+                <TableCell>{q.variant?.vehicle?.model_name} {q.variant?.version}</TableCell>
+                <TableCell>{Number(q.total_amount).toLocaleString("vi-VN")} ₫</TableCell>
+                {user!.role === "ADMIN" && <TableCell>{q.dealer?.dealer_name}</TableCell>}
+                <TableCell>{format(new Date(q.created_at), "dd/MM/yyyy", { locale: vi })}</TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleCreateContract(q.quotation_id)}>
+                    <PlusCircle className="h-4 w-4 text-green-500" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {!filtered.length && (
+              <TableRow>
+                <TableCell colSpan={user!.role === "ADMIN" ? 7 : 6} className="text-center text-gray-500">
+                  Không có dữ liệu
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa báo giá này? Hành động này không thể hoàn tác.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>
-              Xóa
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      <CardFooter className="text-sm text-muted-foreground justify-center">
+        Tổng cộng {filtered.length} báo giá
+      </CardFooter>
+    </Card>
   );
 }

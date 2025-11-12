@@ -110,7 +110,6 @@ export default function ManufacturerDealerRequestDetail() {
     return { ...item, variant: v };
   });
 
-  console.log(variantsInRequest);
 
   // Tổng số lượng
   const totalQuantity = variantsInRequest.reduce(

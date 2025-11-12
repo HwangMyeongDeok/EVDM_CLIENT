@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/hooks/redux";
 import { logout, selectAuth } from "@/features/auth/authSlice";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ const menuItems = [
   { icon: FileText, label: "Quotations", href: "/dealer/staff/quotations" },
   { icon: FileSignature, label: "Contracts", href: "/dealer/staff/contracts" },
   { icon: Users, label: "Customers", href: "/dealer/staff/customers" },
-  { icon: CreditCard , label: "Payment", href: "/dealer/staff/PaymentHistoryPage" },
+  { icon: CreditCard, label: "Payment", href: "/dealer/staff/PaymentHistoryPage" },
   { icon: BarChart3, label: "Reports", href: "/dealer/staff/reports" },
 ];
 
@@ -48,6 +48,7 @@ export function DealerStaffLayout() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-16 items-center gap-4 px-4">
           <Button
@@ -56,11 +57,7 @@ export function DealerStaffLayout() {
             className="md:hidden"
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
-            {sidebarOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
           <div className="flex items-center gap-2">
@@ -69,12 +66,13 @@ export function DealerStaffLayout() {
               <Zap className="h-3 w-3 text-yellow-500 absolute -bottom-0.5 -right-0.5" />
             </div>
             <span className="font-semibold text-lg hidden sm:inline">
-            <Link to ="/dealer/staff/dashboard"> EV DMS</Link>
+              <NavLink to="/dealer/staff/dashboard">EV DMS</NavLink>
             </span>
           </div>
 
           <div className="flex-1" />
 
+          {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2">
@@ -102,10 +100,7 @@ export function DealerStaffLayout() {
                 Profile
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="text-destructive"
-              >
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </DropdownMenuItem>
@@ -114,7 +109,9 @@ export function DealerStaffLayout() {
         </div>
       </header>
 
+      {/* Layout */}
       <div className="flex">
+        {/* Sidebar */}
         <aside
           className={`fixed inset-y-0 left-0 z-40 w-64 border-r bg-background transition-transform duration-300 ease-in-out md:translate-x-0 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -122,24 +119,32 @@ export function DealerStaffLayout() {
         >
           <nav className="flex flex-col gap-2 p-4">
             {menuItems.map((item) => (
-              <Link
+              <NavLink
                 key={item.label}
                 to={item.href}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent hover:text-accent-foreground"
+                  }`
+                }
                 onClick={() => setSidebarOpen(false)}
               >
                 <item.icon className="h-5 w-5" />
                 {item.label}
-              </Link>
+              </NavLink>
             ))}
           </nav>
         </aside>
 
+        {/* Main content */}
         <main className="flex-1 md:ml-64 p-6">
           <Outlet />
         </main>
       </div>
 
+      {/* Overlay khi sidebar mở */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/50 md:hidden"

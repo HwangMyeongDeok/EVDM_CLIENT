@@ -14,7 +14,7 @@ export default function ContractPaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [contract, setContract] = useState<IContract>(null);
+  const [contract, setContract] = useState<IContract>();
   const [amount, setAmount] = useState<number>(0);
   const [paymentType, setPaymentType] = useState<string>("Đặt cọc");
   const [paymentMethod, setPaymentMethod] = useState<string>("CREDIT_CARD");
@@ -65,7 +65,7 @@ export default function ContractPaymentPage() {
       });
 
       const paymentUrl = res.data?.data?.paymentUrl;
-      if (paymentUrl) {
+      if (paymentUrl) { 
         toast.success("Đang chuyển đến cổng thanh toán VNPAY...");
         window.location.href = paymentUrl;
       } else {
@@ -93,7 +93,6 @@ export default function ContractPaymentPage() {
           </div>
         </CardHeader>
         <CardContent className="p-6">
-          {/* Hiển thị trạng thái thanh toán */}
           {paymentStatus && (
             <div className="mb-4 border rounded-md p-3 bg-gray-50">
               <div className="flex items-center gap-2">
