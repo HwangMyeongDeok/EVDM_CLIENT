@@ -30,7 +30,7 @@ export default function AuthGuard({
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     const redirectPath = roleRedirectMap[user.role] || fallbackPath;
     return <Navigate to={redirectPath} replace />;
-}
+  }
 
   const redirectPath = roleRedirectMap[user.role] || "/";
   const isAtRoot = location.pathname === "/" || location.pathname === "";

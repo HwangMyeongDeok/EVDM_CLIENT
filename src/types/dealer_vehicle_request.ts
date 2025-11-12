@@ -1,6 +1,6 @@
 import type { RequestStatus } from "@/types/enums";
 import type { IVehicle } from "./vehicle";
-
+import type { DealerVehicleAllocation } from "./dealer_vehicle_allocation";
 export interface Dealer {
   dealer_id: string;
   dealer_name: string;
@@ -29,6 +29,7 @@ export interface DealerVehicleRequest {
   items: Items[];         
   request_date: string; 
   notes?: string;
+  allocations?: DealerVehicleAllocation[]
 }
 
 export interface Items{
