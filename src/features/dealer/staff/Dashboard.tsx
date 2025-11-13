@@ -1,181 +1,36 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Car, FileText, Users, Calendar, Package, CheckCircle2, TrendingUp } from "lucide-react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
+import React, { useEffect, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Car, FileText, Users, Calendar, Package, CheckCircle2, TrendingUp } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Link } from "react-router-dom";
-// Vehicle
-export interface Vehicle {
-  id: string;
-  model: string;
-  version: string;
-  color: string;
-  price: number;
-  batteryCapacity: string;   // "82 kWh"
-  range: string;             // "358 miles"
-  chargingTime: string;      // "30 min (DC Fast)"
-  image: string;
-  inStock: number;
-}
+import api from "@/lib/axios";
+import type {
+  StaffDashboardResponse,
+  InventoryItem,
+  QuotationItem,
+  StaffContractItem,
+  PendingDeliveryItem,
+  StaffKpis,
+  MonthlyPerformanceItem,
+} from "@/types/dashboard";
 
-// Quotation
-export interface Quotation {
-  id: string;
-  customerId: string;
-  customerName: string;
-  vehicleId: string;
-  vehicleModel: string;
-  price: number;
-  discount: number;
-  finalPrice: number;
-  status: "sent" | "accepted" | "rejected" | "expired";
-  createdAt: string;   // ISO date
-  validUntil: string;  // ISO date
-}
-
-// Contract
-export interface Contract {
-  id: string;
-  quotationId: string;
-  customerId: string;
-  customerName: string;
-  vehicleId: string;
-  vehicleModel: string;
-  totalAmount: number;
-  paymentMethod: "cash" | "bank_transfer" | "financing";
-  status: "draft" | "signed" | "active" | "completed" | "cancelled";
-  signedAt: string;      // ISO date
-  deliveryStatus?: "pending" | "in_transit" | "delivered";
-}
-
-// Customer
-export interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address?: string;
-  createdAt: string;   // ISO date
-}
-
-// TestDrive
+/* ---------------------------
+   KEEP: Mock Test Drives (user requested)
+   --------------------------- */
 export interface TestDrive {
   id: string;
   customerId: string;
   customerName: string;
   vehicleId: string;
   vehicleModel: string;
-  scheduledDate: string;  // ISO date
+  scheduledDate: string; // ISO date
   status: "scheduled" | "completed" | "cancelled" | "no_show";
   feedback?: string;
 }
-
-
-// Mock Data
-const mockVehicles: Vehicle[] = [
-  {
-    id: "v1",
-    model: "Tesla Model 3",
-    version: "Long Range",
-    color: "Pearl White",
-    price: 45000,
-    batteryCapacity: "82 kWh",
-    range: "358 miles",
-    chargingTime: "30 min (DC Fast)",
-    image: "/tesla-model-3-sleek-profile.png",
-    inStock: 5,
-  },
-  {
-    id: "v2",
-    model: "Tesla Model Y",
-    version: "Performance",
-    color: "Midnight Silver",
-    price: 58000,
-    batteryCapacity: "75 kWh",
-    range: "303 miles",
-    chargingTime: "27 min (DC Fast)",
-    image: "/tesla-model-y.png",
-    inStock: 3,
-  },
-  {
-    id: "v3",
-    model: "Rivian R1T",
-    version: "Adventure",
-    color: "Forest Green",
-    price: 73000,
-    batteryCapacity: "135 kWh",
-    range: "314 miles",
-    chargingTime: "40 min (DC Fast)",
-    image: "/rivian-r1t-truck.jpg",
-    inStock: 2,
-  },
-]
-
-const mockQuotations: Quotation[] = [
-  {
-    id: "q1",
-    customerId: "c1",
-    customerName: "John Smith",
-    vehicleId: "v1",
-    vehicleModel: "Tesla Model 3 Long Range",
-    price: 45000,
-    discount: 2000,
-    finalPrice: 43000,
-    status: "sent",
-    createdAt: "2025-01-15",
-    validUntil: "2025-02-15",
-  },
-  {
-    id: "q2",
-    customerId: "c2",
-    customerName: "Sarah Johnson",
-    vehicleId: "v2",
-    vehicleModel: "Tesla Model Y Performance",
-    price: 58000,
-    discount: 3000,
-    finalPrice: 55000,
-    status: "accepted",
-    createdAt: "2025-01-20",
-    validUntil: "2025-02-20",
-  },
-]
-
-const mockContracts: Contract[] = [
-  {
-    id: "ct1",
-    quotationId: "q2",
-    customerId: "c2",
-    customerName: "Sarah Johnson",
-    vehicleId: "v2",
-    vehicleModel: "Tesla Model Y Performance",
-    totalAmount: 55000,
-    paymentMethod: "bank_transfer",
-    status: "signed",
-    signedAt: "2025-01-22",
-    deliveryStatus: "in_transit",
-  },
-]
-
-const mockCustomers: Customer[] = [
-  {
-    id: "c1",
-    name: "John Smith",
-    email: "john.smith@email.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Main St, San Francisco, CA",
-    createdAt: "2025-01-10",
-  },
-  {
-    id: "c2",
-    name: "Sarah Johnson",
-    email: "sarah.j@email.com",
-    phone: "+1 (555) 987-6543",
-    address: "456 Oak Ave, Los Angeles, CA",
-    createdAt: "2025-01-15",
-  },
-]
 
 const mockTestDrives: TestDrive[] = [
   {
@@ -197,29 +52,70 @@ const mockTestDrives: TestDrive[] = [
     status: "completed",
     feedback: "Great experience! Very impressed with the power and handling.",
   },
-]
+];
 
-const monthlySalesData = [
-  { month: "Jul", revenue: 125000, contracts: 3 },
-  { month: "Aug", revenue: 185000, contracts: 4 },
-  { month: "Sep", revenue: 240000, contracts: 5 },
-  { month: "Oct", revenue: 195000, contracts: 4 },
-  { month: "Nov", revenue: 310000, contracts: 7 },
-  { month: "Dec", revenue: 280000, contracts: 6 },
-  { month: "Jan", revenue: 384000, contracts: 8 },
-]
+export default function DealerStaffDashboard(): JSX.Element {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default function DealerStaffDashboard() {
-  const totalVehicles = mockVehicles.reduce((sum, v) => sum + v.inStock, 0)
-  const activeQuotations = mockQuotations.filter((q) => q.status === "sent" || q.status === "accepted").length
-  const signedContracts = mockContracts.filter((c) => c.status === "signed").length
-  const totalCustomers = mockCustomers.length
+  const [kpis, setKpis] = useState<StaffKpis | null>(null);
+  const [recentQuotations, setRecentQuotations] = useState<QuotationItem[]>([]);
+  const [recentContracts, setRecentContracts] = useState<StaffContractItem[]>([]);
+  const [pendingDeliveries, setPendingDeliveries] = useState<PendingDeliveryItem[]>([]);
+  const [inventorySample, setInventorySample] = useState<InventoryItem[]>([]);
+  const [monthlySalesData, setMonthlySalesData] = useState<MonthlyPerformanceItem[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetch = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Gọi endpoint chung /dashboard — backend sẽ tự detect role
+        const resp = await api.get<{ success: boolean; data: StaffDashboardResponse }>("/dashboard");
+        if (!mounted) return;
+        if (!resp?.data?.success) {
+          setError("Lấy dữ liệu dashboard không thành công.");
+          setLoading(false);
+          return;
+        }
+        const payload = resp.data.data;
+
+        // Gán data vào state (nếu server ko trả 1 trường nào thì để mặc định)
+        setKpis(payload.kpis ?? null);
+        setRecentQuotations(payload.recentQuotations ?? []);
+        setRecentContracts(payload.recentContracts ?? []);
+        setPendingDeliveries(payload.pendingDeliveries ?? []);
+        setInventorySample(payload.inventorySample ?? []);
+        // Nếu backend cũng trả monthlyPerformance, gán luôn, nếu không để rỗng (frontend sẽ hiển thị trống)
+        setMonthlySalesData((payload as any).monthlyPerformance ?? []);
+      } catch (err: any) {
+        console.error("API error (staff dashboard):", err);
+        setError(err?.response?.data?.message || "Lỗi khi tải dữ liệu Dashboard (Staff).");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetch();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Fallbacks: nếu BE không trả tổng customers, hiển thị mock / 0
+  const totalVehicles = inventorySample.reduce((s, i) => s + (i.quantity ?? 0), 0);
+  const activeQuotations = recentQuotations.filter(q => q.status === "sent" || q.status === "accepted").length;
+  const signedContracts = recentContracts.filter(c => c.status === "signed").length;
+  const totalCustomers = 0; // giữ nguyên mock nếu backend chưa trả count
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">Welcome back! Here's your overview for today.</p>
+        {loading && <p className="text-sm text-muted-foreground mt-2">Đang tải dữ liệu...</p>}
+        {error && <p className="text-sm text-destructive mt-2">Lỗi: {error}</p>}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -233,6 +129,7 @@ export default function DealerStaffDashboard() {
             <p className="text-xs text-muted-foreground">In stock</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Quotations</CardTitle>
@@ -243,6 +140,7 @@ export default function DealerStaffDashboard() {
             <p className="text-xs text-muted-foreground">Pending & accepted</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Signed Contracts</CardTitle>
@@ -253,6 +151,7 @@ export default function DealerStaffDashboard() {
             <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Customers</CardTitle>
@@ -265,6 +164,7 @@ export default function DealerStaffDashboard() {
         </Card>
       </div>
 
+      {/* Charts & recent */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -273,24 +173,21 @@ export default function DealerStaffDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockQuotations.slice(0, 4).map((quote) => (
-                <div key={quote.id} className="flex items-center justify-between border-b pb-3 last:border-0">
+              {recentQuotations.slice(0, 5).map((quote) => (
+                <div key={String(quote.id)} className="flex items-center justify-between border-b pb-3 last:border-0">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium">{quote.customerName}</p>
-                    <p className="text-xs text-muted-foreground">{quote.vehicleModel}</p>
+                    <p className="text-sm font-medium">{quote.quotation_number ?? quote.id}</p>
+                    <p className="text-xs text-muted-foreground">{quote.createdAt}</p>
                   </div>
                   <div className="text-right space-y-1">
-                    <Badge
-                      variant={
-                        quote.status === "accepted" ? "default" : quote.status === "sent" ? "secondary" : "outline"
-                      }
-                    >
-                      {quote.status}
+                    <Badge variant={quote.status === "accepted" ? "default" : quote.status === "sent" ? "secondary" : "outline"}>
+                      {quote.status ?? "-"}
                     </Badge>
-                    <p className="text-xs text-muted-foreground">${quote.finalPrice.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">${(quote.total_amount ?? 0).toLocaleString()}</p>
                   </div>
                 </div>
               ))}
+              {recentQuotations.length === 0 && !loading && <p className="text-sm text-muted-foreground">Không có báo giá gần đây.</p>}
             </div>
           </CardContent>
         </Card>
@@ -298,7 +195,7 @@ export default function DealerStaffDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Monthly Sales</CardTitle>
-            <CardDescription>Revenue trend over the last 7 months</CardDescription>
+            <CardDescription>Revenue trend</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -306,42 +203,21 @@ export default function DealerStaffDashboard() {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="month" className="text-xs" />
                 <YAxis className="text-xs" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--background))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                  formatter={(value: number, name: string) => [
-                    name === "revenue" ? `$${value.toLocaleString()}` : value,
-                    name === "revenue" ? "Revenue" : "Contracts",
-                  ]}
-                />
+                <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
                 <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  dot={{ fill: "hsl(var(--primary))" }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="contracts"
-                  stroke="hsl(var(--chart-2))"
-                  strokeWidth={2}
-                  dot={{ fill: "hsl(var(--chart-2))" }}
-                />
+                <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} />
+                <Line type="monotone" dataKey="contracts" stroke="hsl(var(--chart-2))" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
+            <p className="text-xs text-muted-foreground mt-2">Nếu server không trả dữ liệu lịch sử, biểu đồ sẽ trống.</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Tabs */}
       <Tabs defaultValue="vehicles" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="vehicles">
-            <Link to="/dealer/staff/vehicles"> Vehicles</Link></TabsTrigger>
+          <TabsTrigger value="vehicles"><Link to="/dealer/staff/vehicles"> Vehicles</Link></TabsTrigger>
           <TabsTrigger value="quotations">Quotations</TabsTrigger>
           <TabsTrigger value="contracts">Contracts</TabsTrigger>
           <TabsTrigger value="customers">Customers</TabsTrigger>
@@ -371,26 +247,29 @@ export default function DealerStaffDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockVehicles.map((vehicle) => (
-                  <TableRow key={vehicle.id}>
-                    <TableCell className="font-medium">{vehicle.model}</TableCell>
-                    <TableCell>{vehicle.version}</TableCell>
-                    <TableCell>{vehicle.color}</TableCell>
-                    <TableCell>${vehicle.price.toLocaleString()}</TableCell>
+                {inventorySample.map((v) => (
+                  <TableRow key={String(v.variant_id)}>
+                    <TableCell className="font-medium">{v.model}</TableCell>
+                    <TableCell>-</TableCell>
+                    <TableCell>-</TableCell>
+                    <TableCell>-</TableCell>
                     <TableCell>
-                      <Badge variant={vehicle.inStock > 0 ? "default" : "secondary"}>
-                        {vehicle.inStock > 0 ? "Available" : "Out of Stock"}
+                      <Badge variant={v.quantity > 0 ? "default" : "secondary"}>
+                        {v.quantity > 0 ? "Available" : "Out of Stock"}
                       </Badge>
                     </TableCell>
-                    <TableCell>{vehicle.batteryCapacity}</TableCell>
-                    <TableCell>{vehicle.range}</TableCell>
+                    <TableCell>-</TableCell>
+                    <TableCell>-</TableCell>
                     <TableCell>
-                      <Button size="sm" variant="outline">
-                        Create Quote
-                      </Button>
+                      <Button size="sm" variant="outline">Create Quote</Button>
                     </TableCell>
                   </TableRow>
                 ))}
+                {inventorySample.length === 0 && !loading && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground">Không có dữ liệu kho.</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -409,48 +288,38 @@ export default function DealerStaffDashboard() {
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Final Price</TableHead>
+                  <TableHead>Created</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Valid Until</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockQuotations.map((quote) => (
-                  <TableRow key={quote.id}>
-                    <TableCell className="font-medium">{quote.id}</TableCell>
-                    <TableCell>{quote.customerName}</TableCell>
-                    <TableCell>{quote.vehicleModel}</TableCell>
-                    <TableCell>${quote.finalPrice.toLocaleString()}</TableCell>
+                {recentQuotations.map((q) => (
+                  <TableRow key={String(q.id)}>
+                    <TableCell className="font-medium">{q.quotation_number ?? q.id}</TableCell>
+                    <TableCell>{q.createdAt}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          quote.status === "accepted"
-                            ? "default"
-                            : quote.status === "sent"
-                              ? "secondary"
-                              : "outline"
-                        }
-                      >
-                        {quote.status}
+                      <Badge variant={q.status === "accepted" ? "default" : q.status === "sent" ? "secondary" : "outline"}>
+                        {q.status ?? "-"}
                       </Badge>
                     </TableCell>
-                    <TableCell>{quote.validUntil}</TableCell>
+                    <TableCell>${(q.total_amount ?? 0).toLocaleString()}</TableCell>
                     <TableCell>
-                      <Button size="sm" variant="outline">
-                        View
-                      </Button>
+                      <Button size="sm" variant="outline">View</Button>
                     </TableCell>
                   </TableRow>
                 ))}
+                {recentQuotations.length === 0 && !loading && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">Không có báo giá.</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
         </TabsContent>
 
-        {/* Contracts Tab */}
         <TabsContent value="contracts" className="space-y-4" id="contracts">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">Contracts</h2>
@@ -460,84 +329,33 @@ export default function DealerStaffDashboard() {
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Payment</TableHead>
+                  <TableHead>Ngày</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Delivery</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockContracts.map((contract) => (
-                  <TableRow key={contract.id}>
-                    <TableCell className="font-medium">{contract.id}</TableCell>
-                    <TableCell>{contract.customerName}</TableCell>
-                    <TableCell>{contract.vehicleModel}</TableCell>
-                    <TableCell>${contract.totalAmount.toLocaleString()}</TableCell>
-                    <TableCell className="capitalize">{contract.paymentMethod.replace("_", " ")}</TableCell>
-                    <TableCell>
-                      <Badge variant="default">{contract.status}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={contract.deliveryStatus === "delivered" ? "default" : "secondary"}>
-                        {contract.deliveryStatus}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="outline">
-                        View
-                      </Button>
-                    </TableCell>
+                {recentContracts.map(c => (
+                  <TableRow key={String(c.id)}>
+                    <TableCell className="font-medium">{c.contract_code ?? c.id}</TableCell>
+                    <TableCell>{c.contractDate}</TableCell>
+                    <TableCell><Badge variant="default">{c.status}</Badge></TableCell>
+                    <TableCell>${(c.final_amount ?? 0).toLocaleString()}</TableCell>
+                    <TableCell><Button size="sm" variant="outline">View</Button></TableCell>
                   </TableRow>
                 ))}
+                {recentContracts.length === 0 && !loading && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">Không có hợp đồng gần đây.</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
         </TabsContent>
 
-        <TabsContent value="customers" className="space-y-4" id="customers">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Customers</h2>
-            <Button>
-              <Users className="mr-2 h-4 w-4" />
-              Add Customer
-            </Button>
-          </div>
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Address</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockCustomers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className="font-medium">{customer.name}</TableCell>
-                    <TableCell>{customer.email}</TableCell>
-                    <TableCell>{customer.phone}</TableCell>
-                    <TableCell>{customer.address}</TableCell>
-                    <TableCell>{customer.createdAt}</TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="outline">
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
-
-        {/* Test Drives Tab */}
+        {/* TEST DRIVES (KEEP MOCK) */}
         <TabsContent value="test-drives" className="space-y-4" id="test-drives">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">Test Drives</h2>
@@ -663,41 +481,15 @@ export default function DealerStaffDashboard() {
                 <XAxis dataKey="month" className="text-xs" />
                 <YAxis yAxisId="left" className="text-xs" />
                 <YAxis yAxisId="right" orientation="right" className="text-xs" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--background))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                  formatter={(value: number, name: string) => [
-                    name === "revenue" ? `$${value.toLocaleString()}` : value,
-                    name === "revenue" ? "Revenue" : "Contracts",
-                  ]}
-                />
+                <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
                 <Legend />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={3}
-                  dot={{ fill: "hsl(var(--primary))", r: 4 }}
-                  name="Revenue"
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="contracts"
-                  stroke="hsl(var(--chart-2))"
-                  strokeWidth={3}
-                  dot={{ fill: "hsl(var(--chart-2))", r: 4 }}
-                  name="Contracts"
-                />
+                <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4 }} name="Revenue" />
+                <Line yAxisId="right" type="monotone" dataKey="contracts" stroke="hsl(var(--chart-2))" strokeWidth={3} dot={{ r: 4 }} name="Contracts" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }
