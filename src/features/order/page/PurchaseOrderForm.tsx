@@ -187,15 +187,6 @@ export default function PurchaseRequestForm() {
                   className="mt-1"
                 />
               </div>
-
-              <div>
-                <Label className="font-medium">Mã Đại lý</Label>
-                <Input
-                  value={dealer_id}
-                  readOnly
-                  className="mt-1 bg-gray-100 text-gray-600 cursor-not-allowed"
-                />
-              </div>
             </CardContent>
           </Card>
 

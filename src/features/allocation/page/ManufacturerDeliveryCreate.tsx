@@ -44,14 +44,16 @@ export default function ManufacturerDeliveryBatchCreatePage() {
 
   // --- THAY ĐỔI 2: Thêm lại API 2 (Lấy đợt giao) ---
   const {
-    data: allocationResponse,
-    isLoading: isLoadingAllocations, // Thêm lại 'isLoading'
-  } = useGetDealerAllocationsQuery({
-    request_id: request_id ? Number(request_id) : undefined,
-  });
+  data: allocationResponse,
+  isLoading: isLoadingAllocations,
+} = useGetDealerAllocationsQuery(
+  { request_id: Number(request_id) },
+  { skip: !request_id } // ✅ Không gọi API nếu chưa có request_id
+);
 
   // --- THAY ĐỔI 3: Lấy 'allocations' từ API 2 ---
   const allocations: DealerVehicleAllocation[] = allocationResponse?.data ?? [];
+  console.log(allocationResponse?.data)
 
   // --- Mutations (Giữ nguyên) ---
   const [addAllocation, { isLoading: isAdding }] = useCreateDealerAllocationMutation();
