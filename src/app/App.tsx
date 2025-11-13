@@ -36,6 +36,10 @@ import ManufacturerDeliveryCreate from "@/features/allocation/page/ManufacturerD
 // Admin
 import UserManagementPage from "@/features/admin/page/UserManagementPage";
 import DealerManagementPage from "@/features/admin/page/DealerManagementPage";
+import VehicleManagementPage from "@/features/admin/page/VehicleManagementPage";
+import InventoryManagementPage from "@/features/admin/page/InventoryManagementPage";
+import DealerPaymentManagementPage from "@/features/admin/page/DealerPaymentManagementPage";
+import PromotionManagementPage from "@/features/admin/page/PromotionManagementPage";
 
 export default function App() {
   return (
@@ -95,6 +99,13 @@ export default function App() {
           <Route element={<DealerManagerLayout />}>
             <Route path="/admin/users" element={<UserManagementPage />} />
             <Route path="/admin/dealers" element={<DealerManagementPage />} />
+            <Route path="/admin/vehicles" element={<VehicleManagementPage />} />
+            <Route path="/admin/inventory" element={<InventoryManagementPage />} />
+            <Route path="/admin/payments" element={<DealerPaymentManagementPage />} />
+            <Route path="/admin/promotions" element={<PromotionManagementPage />} />
+
+            =
+
           </Route>
         </Route>
 
