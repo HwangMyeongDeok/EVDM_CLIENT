@@ -24,13 +24,14 @@ import {
   Warehouse,      // Mới
   Banknote,       // Mới
   BarChart3,
-     // Mới
+  // Mới
 } from "lucide-react";
 
 // --- Menu Items cho Manager ---
 const managerMenuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dealer/manager/dashboard" },
   { icon: UsersRound, label: "Đặt hàng", href: "/dealer/manager/purchase-orders/list" },
+  { icon: UsersRound, label: "Quản lý lô hàng", href: "/dealer/manager/allocations-tracking" },
   { icon: UsersRound, label: "Quản Lý Nhân Viên", href: "/dealer/manager/staff" },
   { icon: Warehouse, label: "Quản Lý Kho", href: "/dealer/manager/inventory" },
   { icon: Banknote, label: "Tài Chính & Sales", href: "/dealer/manager/finance" },
@@ -118,9 +119,8 @@ export function DealerManagerLayout() {
       {/* Sidebar & Content Area */}
       <div className="flex">
         <aside
-          className={`fixed inset-y-0 left-0 z-40 w-64 border-r bg-background transition-transform duration-300 ease-in-out md:translate-x-0 ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } top-16`}
+          className={`fixed inset-y-0 left-0 z-40 w-64 border-r bg-background transition-transform duration-300 ease-in-out md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            } top-16`}
         >
           {/* --- Navigation Mới cho Manager --- */}
           <nav className="flex flex-col gap-2 p-4">

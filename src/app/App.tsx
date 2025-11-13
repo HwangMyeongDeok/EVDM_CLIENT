@@ -85,6 +85,8 @@ export default function App() {
             <Route path="/dealer/manager/dashboard" element={<DealerStaffDashboard />} />
             <Route path="/dealer/manager/purchase-orders/new" element={<PurchaseOrderForm />} />
             <Route path="/dealer/manager/purchase-orders/list" element={<OrderRequestList />} />
+            <Route path="/dealer/manager/allocations-tracking" element={<AllocationTrackingPage />} />
+            <Route path="/dealer/manager/deposit-status" element={<DepositStatusPage />} />
           </Route>
         </Route>
 
@@ -97,8 +99,7 @@ export default function App() {
           </Route>
         </Route>
 
-        <Route path="/dealer/manager/allocation-tracking" element={<AllocationTrackingPage />} />
-        <Route path="/dealer/manager/deposit-status" element={<DepositStatusPage />} />
+
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

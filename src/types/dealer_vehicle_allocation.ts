@@ -1,4 +1,5 @@
 import type { IDealer } from "@/types/dealer";
+import type { RequestStatus } from "@/types/enums";
 import type { IVehicleVariant } from "@/types/vehicle";
 
 export const AllocationStatus = {
@@ -50,9 +51,10 @@ export interface Allocation {
   notes: string | null;
   status: AllocationStatus;
   items: AllocationItem[];
-  paid_amount: number;
   actual_delivery_date?: string;
   request: {
+    status: RequestStatus;
+    paid_amount: number;
     items: {
       item_id: number;
       variant: {

@@ -18,7 +18,7 @@ export type FeedbackStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED";
 
 export type DebtStatus = "PENDING" | "PAID" | "OVERDUE";
 
-export type RequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "PARTIAL";
+export type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 export type DealerOrderStatus = "PENDING" | "COMPLETED" | "CANCELLED";
 
