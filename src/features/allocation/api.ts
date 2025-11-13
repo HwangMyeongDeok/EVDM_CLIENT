@@ -12,25 +12,26 @@ export const dealerVehicleAllocationApi = createApi({
   endpoints: (builder) => ({
     // 🟢 Lấy danh sách allocation theo request_id
     getDealerAllocations: builder.query<
-      { success: boolean; data: DealerVehicleAllocation[] },
-      { request_id?: number }
-    >({
-      query: (params) => ({
-        url: "/dealer-allocations", // Sẽ gọi: /dealer-allocations?request_id=26
-        params,
-      }),
-      // 2. Cung cấp tag 'LIST' (cho cả danh sách) và 'ID' (cho từng mục)
-      providesTags: (result) =>
-        result?.data
-          ? [
-              ...result.data.map(({ allocation_id }) => ({
-                type: "DealerVehicleAllocation" as const,
-                id: allocation_id,
-              })),
-              { type: "DealerVehicleAllocation", id: "LIST" },
-            ]
-          : [{ type: "DealerVehicleAllocation", id: "LIST" }],
-    }),
+  { success: boolean; data: DealerVehicleAllocation[] },
+  { request_id: number }
+>({
+  query: ({ request_id }) => ({
+    // ✅ Gọi đúng với backend route: /dealer-allocations/:request_id
+    url: `/dealer-allocations/${request_id}`,
+    method: "GET",
+  }),
+  // ✅ Giữ nguyên phần providesTags như cũ
+  providesTags: (result) =>
+    result?.data
+      ? [
+          ...result.data.map(({ allocation_id }) => ({
+            type: "DealerVehicleAllocation" as const,
+            id: allocation_id,
+          })),
+          { type: "DealerVehicleAllocation", id: "LIST" },
+        ]
+      : [{ type: "DealerVehicleAllocation", id: "LIST" }],
+}),
 
     // 🟢 Lấy chi tiết 1 allocation
     getDealerAllocationById: builder.query<
